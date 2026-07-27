@@ -1,5 +1,12 @@
+export interface TenantInfo {
+  code: string;
+  id: number;
+  name: string;
+  status: 'active' | 'disabled';
+}
 export interface UserInfo {
   id: number;
+  tenantId: number;
   password: string;
   realName: string;
   roles: string[];
@@ -12,9 +19,25 @@ export interface TimezoneOption {
   timezone: string;
 }
 
+export const MOCK_TENANTS: TenantInfo[] = [
+  {
+    code: 'demo',
+    id: 1,
+    name: '演示企业',
+    status: 'active',
+  },
+  {
+    code: 'acme',
+    id: 2,
+    name: '示例企业',
+    status: 'active',
+  },
+];
+
 export const MOCK_USERS: UserInfo[] = [
   {
     id: 0,
+    tenantId: 1,
     password: '123456',
     realName: 'Vben',
     roles: ['super'],
@@ -23,6 +46,7 @@ export const MOCK_USERS: UserInfo[] = [
   },
   {
     id: 1,
+    tenantId: 1,
     password: '123456',
     realName: 'Admin',
     roles: ['admin'],
@@ -31,6 +55,7 @@ export const MOCK_USERS: UserInfo[] = [
   },
   {
     id: 2,
+    tenantId: 1,
     password: '123456',
     realName: 'Jack',
     roles: ['user'],

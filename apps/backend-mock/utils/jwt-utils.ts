@@ -11,9 +11,25 @@ import { MOCK_USERS } from './mock-data';
 const ACCESS_TOKEN_SECRET = 'access_token_secret';
 const REFRESH_TOKEN_SECRET = 'refresh_token_secret';
 
-export interface UserPayload extends UserInfo {
-  iat: number;
-  exp: number;
+export interface UserPayload {
+  exp?: number;
+  iat?: number;
+  tenantId: number;
+  userId: number;
+}
+
+function createTokenPayload(user: UserInfo): UserPayload {
+  return {
+    tenantId: user.tenantId,
+    userId: user.id,
+  };
+}
+
+function findUserByPayload(payload:UserPayload){
+  return MOCK_USERS.find(
+    (item)=>
+      item.id === payload.userId && item.tenantId === payload.tenantId
+  )
 }
 
 export function generateAccessToken(user: UserInfo) {

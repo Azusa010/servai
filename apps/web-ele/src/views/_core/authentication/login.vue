@@ -31,6 +31,19 @@ const MOCK_USER_OPTIONS: BasicOption[] = [
 const formSchema = computed((): VbenFormSchema[] => {
   return [
     {
+      component: 'VbenInput',
+      componentProps: {
+        placeholder: $t('authentication.tenantCodeTip'),
+      },
+      fieldName: 'tenantCode',
+      label: $t('authentication.tenantCode'),
+      rules: z
+        .string()
+        .trim()
+        .min(1, { message: $t('authentication.tenantCodeTip') })
+        .default('demo'),
+    },
+    {
       component: 'VbenSelect',
       componentProps: {
         options: MOCK_USER_OPTIONS,

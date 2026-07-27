@@ -6,6 +6,8 @@
   "loginSuccessDesc": "Welcome Back",
   "loginSubtitle": "Enter your account details to manage your projects",
   "selectAccount": "Quick Select Account",
+  "tenantCode": "Tenant Code",
+  "tenantCodeTip": "Please enter tenant code",
   "username": "Username",
   "password": "Password",
   "usernameTip": "Please enter username",
