@@ -4,6 +4,15 @@ export interface TenantInfo {
   name: string;
   status: 'active' | 'disabled';
 }
+
+export interface knowledgeBaseInfo {
+  description: string;
+  id: number;
+  name: string;
+  status: 'disabled' | 'enabled';
+  tenantId: number;
+}
+
 export interface UserInfo {
   id: number;
   tenantId: number;
@@ -31,6 +40,30 @@ export const MOCK_TENANTS: TenantInfo[] = [
     id: 2,
     name: '示例企业',
     status: 'active',
+  },
+];
+
+export const MOCK_KNOWLEDGE_BASES: knowledgeBaseInfo[] = [
+  {
+    description: '产品介绍和常见问题',
+    id: 1,
+    name: '产品知识库',
+    status: 'enabled',
+    tenantId: 1,
+  },
+  {
+    description: '内部客服处理规范',
+    id: 2,
+    name: '客服知识库',
+    status: 'disabled',
+    tenantId: 1,
+  },
+  {
+    description: 'Acme 企业内部知识',
+    id: 3,
+    name: 'Acme 知识库',
+    status: 'enabled',
+    tenantId: 2,
   },
 ];
 
@@ -129,6 +162,24 @@ const dashboardMenus = [
       },
     ],
   },
+  {
+    meta:{
+      order:0,
+      title:"知识管理"
+    },
+    name:'Knowledge',
+    path:'/knowledge',
+    children:[
+      {
+        name:'KnowledgeBase',
+        path:'base',
+        component:'/knowledge-base/index',
+        meta:{
+          title:'知识库'
+        }
+      }
+    ]
+  }
 ];
 
 const createDemosMenus = (role: 'admin' | 'super' | 'user') => {
