@@ -62,23 +62,41 @@ export const MOCK_USERS: UserInfo[] = [
     username: 'jack',
     homePath: '/dashboard/analytics',
   },
+  {
+    id: 3,
+    tenantId: 2,
+    password: '123456',
+    realName: 'Acme Admin',
+    roles: ['admin'],
+    username: 'admin',
+    homePath: '/dashboard/workspace',
+  },
 ];
 
 export const MOCK_CODES = [
   // super
   {
     codes: ['AC_100100', 'AC_100110', 'AC_100120', 'AC_100010'],
-    username: 'vben',
+    tenantId: 1,
+    userId: 0,
   },
   {
     // admin
     codes: ['AC_100010', 'AC_100020', 'AC_100030'],
-    username: 'admin',
+    tenantId: 1,
+    userId: 1,
   },
   {
     // user
     codes: ['AC_1000001', 'AC_1000002'],
-    username: 'jack',
+    tenantId: 1,
+    userId: 2,
+  },
+  {
+    // admin
+    codes: ['AC_100010', 'AC_100020', 'AC_100030'],
+    tenantId: 2,
+    userId: 3,
   },
 ];
 
@@ -205,15 +223,23 @@ const createDemosMenus = (role: 'admin' | 'super' | 'user') => {
 export const MOCK_MENUS = [
   {
     menus: [...dashboardMenus, ...createDemosMenus('super')],
-    username: 'vben',
+    tenantId: 1,
+    userId: 0,
   },
   {
     menus: [...dashboardMenus, ...createDemosMenus('admin')],
-    username: 'admin',
+    tenantId: 1,
+    userId: 1,
   },
   {
     menus: [...dashboardMenus, ...createDemosMenus('user')],
-    username: 'jack',
+    tenantId: 1,
+    userId: 2,
+  },
+  {
+    menus: [...dashboardMenus, ...createDemosMenus('admin')],
+    tenantId: 2,
+    userId: 3,
   },
 ];
 

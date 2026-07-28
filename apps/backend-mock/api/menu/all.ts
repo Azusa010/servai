@@ -10,6 +10,9 @@ export default eventHandler(async (event) => {
   }
 
   const menus =
-    MOCK_MENUS.find((item) => item.username === userinfo.username)?.menus ?? [];
+    MOCK_MENUS.find(
+      (item) =>
+        item.userId === userinfo.id && item.tenantId === userinfo.tenantId,
+    )?.menus ?? [];
   return useResponseSuccess(menus);
 });

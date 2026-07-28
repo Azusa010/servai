@@ -18,28 +18,22 @@ export interface UserPayload {
   userId: number;
 }
 
-function createTokenPayload(user: UserInfo): UserPayload {
-  return {
-    tenantId: user.tenantId,
-    userId: user.id,
-  };
-}
-
-function findUserByPayload(payload:UserPayload){
-  return MOCK_USERS.find(
-    (item)=>
-      item.id === payload.userId && item.tenantId === payload.tenantId
-  )
-}
-
 export function generateAccessToken(user: UserInfo) {
-  return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+  return jwt.sign(
+    { tenantId: user.tenantId, userId: user.id },
+    ACCESS_TOKEN_SECRET,
+    { expiresIn: '7d' },
+  );
 }
 
 export function generateRefreshToken(user: UserInfo) {
-  return jwt.sign(user, REFRESH_TOKEN_SECRET, {
-    expiresIn: '30d',
-  });
+  return jwt.sign(
+    { tenantId: user.tenantId, userId: user.id },
+    REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: '30d',
+    },
+  );
 }
 
 export function verifyAccessToken(
@@ -61,8 +55,10 @@ export function verifyAccessToken(
       ACCESS_TOKEN_SECRET,
     ) as unknown as UserPayload;
 
-    const username = decoded.username;
-    const user = MOCK_USERS.find((item) => item.username === username);
+    const user = MOCK_USERS.find(
+      (item) =>
+        item.id === decoded.userId && item.tenantId === decoded.tenantId,
+    );
     if (!user) {
       return null;
     }
@@ -78,10 +74,10 @@ export function verifyRefreshToken(
 ): null | Omit<UserInfo, 'password'> {
   try {
     const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET) as UserPayload;
-    const username = decoded.username;
     const user = MOCK_USERS.find(
-      (item) => item.username === username,
-    ) as UserInfo;
+      (item) =>
+        item.id === decoded.userId && item.tenantId === decoded.tenantId,
+    );
     if (!user) {
       return null;
     }

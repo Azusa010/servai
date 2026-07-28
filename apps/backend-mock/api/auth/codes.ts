@@ -10,7 +10,10 @@ export default eventHandler((event) => {
   }
 
   const codes =
-    MOCK_CODES.find((item) => item.username === userinfo.username)?.codes ?? [];
+    MOCK_CODES.find(
+      (item) =>
+        item.userId === userinfo.id && item.tenantId === userinfo.tenantId,
+    )?.codes ?? [];
 
   return useResponseSuccess(codes);
 });

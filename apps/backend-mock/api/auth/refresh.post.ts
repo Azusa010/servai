@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const findUser = MOCK_USERS.find(
-    (item) => item.username === userinfo.username,
+    (item) => item.id === userinfo.id && item.tenantId === userinfo.tenantId,
   );
   if (!findUser) {
     return forbiddenResponse(event);
