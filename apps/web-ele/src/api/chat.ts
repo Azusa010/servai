@@ -64,3 +64,32 @@ export function getChatMessageListApi(params: {
     params,
   });
 }
+
+export interface ChatStreamCallbacks {
+  onEnd?: () => void;
+  onMessage?: (chunk: string) => void;
+}
+
+export function askChatStreamApi(
+  data: {
+    conversationId: number;
+    question: string;
+  },
+  callbacks: ChatStreamCallbacks,
+) {
+  const controller = new AbortController();
+
+  const promise = requestClient.postSSE('/chat/ask', data, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    onEnd: callbacks.onEnd,
+    onMessage: callbacks.onMessage,
+    signal: controller.signal,
+  });
+
+  return {
+    abort: () => controller.abort(),
+    promise,
+  };
+}
