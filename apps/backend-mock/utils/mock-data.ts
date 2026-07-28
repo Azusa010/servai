@@ -13,6 +13,24 @@ export interface knowledgeBaseInfo {
   tenantId: number;
 }
 
+export interface KnowledgeDocumentInfo {
+  createTime: string;
+  createdBy: number;
+  id: number;
+  knowledgeBaseId: number;
+  mimeType: string;
+  name: string;
+  size: number;
+  status:
+    | 'archived'
+    | 'failed'
+    | 'parsing'
+    | 'pending_publish'
+    | 'published'
+    | 'uploading';
+  tenantId: number;
+}
+
 export interface UserInfo {
   id: number;
   tenantId: number;
@@ -66,6 +84,8 @@ export const MOCK_KNOWLEDGE_BASES: knowledgeBaseInfo[] = [
     tenantId: 2,
   },
 ];
+
+export const MOCK_KNOWLEDGE_DOCUMENTS: KnowledgeDocumentInfo[] = [];
 
 export const MOCK_USERS: UserInfo[] = [
   {
@@ -163,23 +183,23 @@ const dashboardMenus = [
     ],
   },
   {
-    meta:{
-      order:0,
-      title:"知识管理"
+    meta: {
+      order: 0,
+      title: '知识管理',
     },
-    name:'Knowledge',
-    path:'/knowledge',
-    children:[
+    name: 'Knowledge',
+    path: '/knowledge',
+    children: [
       {
-        name:'KnowledgeBase',
-        path:'base',
-        component:'/knowledge-base/index',
-        meta:{
-          title:'知识库'
-        }
-      }
-    ]
-  }
+        name: 'KnowledgeBase',
+        path: 'base',
+        component: '/knowledge-base/index',
+        meta: {
+          title: '知识库',
+        },
+      },
+    ],
+  },
 ];
 
 const createDemosMenus = (role: 'admin' | 'super' | 'user') => {
