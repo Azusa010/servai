@@ -27,8 +27,9 @@ import {
 import {
   createKnowledgeBaseApi,
   getKnowledgeBaseListApi,
-  uploadKnowledgeBaseFileApi,
   getKnowledgeDocumentListApi,
+  publishKnowledgeDocumentApi,
+  uploadKnowledgeBaseFileApi,
 } from '#/api';
 
 const loading = ref(false);
@@ -166,6 +167,13 @@ async function handleViewDocuments(row: KnowledgeBase, refresh = false) {
       documentLoading.value = false;
     }
   }
+}
+
+async function handlePublishDocument(row: KnowledgeDocument) {
+  const document = await publishKnowledgeDocumentApi(row.id);
+
+  row.status = document.status;
+  ElMessage.success('发布成功');
 }
 
 onBeforeUnmount(stopDocumentRefresh);
@@ -312,6 +320,18 @@ onMounted(loadData);
             (row) => dayjs(row.createTime).format('YYYY-MM-DD HH:mm:ss')
           "
         />
+        <ElTable.TableColumn label="操作" width="100">
+          <template #default="{ row }">
+            <ElButton
+              v-if="row.status === 'pending_publish'"
+              link
+              type="primary"
+              @click="handlePublishDocument(row as KnowledgeDocument)"
+            >
+              发布
+            </ElButton>
+          </template>
+        </ElTable.TableColumn>
       </ElTable>
     </ElDialog>
   </Page>

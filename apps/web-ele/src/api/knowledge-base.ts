@@ -76,3 +76,9 @@ export function getKnowledgeDocumentListApi(params: {
   );
 }
 
+export function publishKnowledgeDocumentApi(id: number) {
+  return requestClient.post<KnowledgeDocument>(
+    '/knowledge-base/document/publish',
+    { id },
+  );
+}
