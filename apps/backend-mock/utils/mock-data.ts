@@ -30,6 +30,34 @@ export interface KnowledgeDocumentInfo {
     | 'uploading';
   tenantId: number;
 }
+export interface ChatCitationInfo {
+  content: string;
+  documentId: number;
+  documentName: string;
+  knowledgeBaseId: number;
+  knowledgeBaseName: string;
+}
+
+export interface ChatConversationInfo {
+  createTime: string;
+  deleted: boolean;
+  id: number;
+  tenantId: number;
+  title: string;
+  updateTime: string;
+  userId: number;
+}
+
+export interface ChatMessageInfo {
+  citations: ChatCitationInfo[];
+  content: string;
+  conversationId: number;
+  createTime: string;
+  id: number;
+  role: 'assistant' | 'user';
+}
+
+
 
 export interface UserInfo {
   id: number;
@@ -86,6 +114,9 @@ export const MOCK_KNOWLEDGE_BASES: knowledgeBaseInfo[] = [
 ];
 
 export const MOCK_KNOWLEDGE_DOCUMENTS: KnowledgeDocumentInfo[] = [];
+
+export const MOCK_CHAT_CONVERSATIONS: ChatConversationInfo[] = [];
+export const MOCK_CHAT_MESSAGES: ChatMessageInfo[] = [];
 
 export const MOCK_USERS: UserInfo[] = [
   {
