@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import type { KnowledgeBase, KnowledgeDocument } from '#/api';
 
-import { onMounted, ref } from 'vue';
+import { onBeforeMount, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
 import type { UploadUserFile } from 'element-plus';
 
 import {
+  dayjs,
   ElButton,
   ElCard,
   ElDialog,
@@ -47,6 +48,24 @@ const documentVisible = ref(false);
 const documentLoading = ref(false);
 const documentList = ref<KnowledgeDocument[]>([]);
 const documentKnowledgeBaseName = ref('');
+
+const documentStatusMap = {
+  archived: { text: '已归档', type: 'info' },
+  failed: { text: '处理失败', type: 'danger' },
+  parsing: { text: '解析中', type: 'warning' },
+  pending_publish: { text: '待发布', type: 'primary' },
+  published: { text: '已发布', type: 'success' },
+  uploading: { text: '上传中', type: 'warning' },
+} as const;
+
+let documentRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+function stopDocumentRefresh() {
+  if (documentRefreshTimer) {
+    clearTimeout(documentRefreshTimer);
+    documentRefreshTimer = undefined;
+  }
+}
 
 async function loadData() {
   loading.value = true;
@@ -113,10 +132,14 @@ async function handleCreateSubmit() {
   }
 }
 
-async function handleViewDocuments(row: KnowledgeBase) {
-  documentVisible.value = true;
-  documentLoading.value = true;
-  documentKnowledgeBaseName.value = row.name;
+async function handleViewDocuments(row: KnowledgeBase, refresh = false) {
+  if (!refresh) {
+    stopDocumentRefresh();
+    documentVisible.value = true;
+    documentLoading.value = true;
+    documentKnowledgeBaseName.value = row.name;
+    documentList.value = [];
+  }
 
   try {
     const result = await getKnowledgeDocumentListApi({
@@ -125,13 +148,27 @@ async function handleViewDocuments(row: KnowledgeBase) {
       pageSize: 20,
     });
     documentList.value = result.items;
+
+    if (result.items.some((item) => item.status === 'parsing')) {
+      documentRefreshTimer = setTimeout(() => {
+        if (documentVisible.value) {
+          void handleViewDocuments(row, true);
+        }
+      }, 1000);
+    } else {
+      stopDocumentRefresh();
+    }
   } catch {
     documentList.value = [];
+    stopDocumentRefresh();
   } finally {
-    documentLoading.value = false;
+    if (!refresh) {
+      documentLoading.value = false;
+    }
   }
 }
 
+onBeforeMount(stopDocumentRefresh);
 onMounted(loadData);
 </script>
 
@@ -171,7 +208,11 @@ onMounted(loadData);
         </ElTable.TableColumn>
         <ElTable.TableColumn label="操作" width="100">
           <template #default="{ row }">
-            <ElButton link type="primary" @click="handleViewDocuments(row as KnowledgeBase)">
+            <ElButton
+              link
+              type="primary"
+              @click="handleViewDocuments(row as KnowledgeBase)"
+            >
               文档
             </ElButton>
           </template>
@@ -244,13 +285,33 @@ onMounted(loadData);
       v-model="documentVisible"
       :title="`${documentKnowledgeBaseName} - 文档`"
       width="800px"
+      @close="stopDocumentRefresh"
     >
       <ElTable v-loading="documentLoading" :data="documentList">
         <ElTable.TableColumn label="文件名" prop="name" />
         <ElTable.TableColumn label="类型" prop="mimeType" />
         <ElTable.TableColumn label="大小（字节）" prop="size" />
-        <ElTable.TableColumn label="状态" prop="status" />
-        <ElTable.TableColumn label="上传时间" prop="createTime" />
+        <ElTable.TableColumn label="状态">
+          <template #default="{ row }">
+            <ElTag
+              :type="
+                documentStatusMap[row.status as keyof typeof documentStatusMap]
+                  .type
+              "
+            >
+              {{
+                documentStatusMap[row.status as keyof typeof documentStatusMap]
+                  .text
+              }}
+            </ElTag>
+          </template>
+        </ElTable.TableColumn>
+        <ElTable.TableColumn
+          label="上传时间"
+          :formatter="
+            (row) => dayjs(row.createTime).format('YYYY-MM-DD HH:mm:ss')
+          "
+        />
       </ElTable>
     </ElDialog>
   </Page>

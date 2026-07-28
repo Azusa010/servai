@@ -53,5 +53,15 @@ export default eventHandler(async (event) => {
 
   MOCK_KNOWLEDGE_DOCUMENTS.push(document);
 
-  return useResponseSuccess(document)
+  setTimeout(() => {
+    const currentDocument = MOCK_KNOWLEDGE_DOCUMENTS.find(
+      (item) => item.id === document.id,
+    );
+
+    if (currentDocument?.status === 'parsing') {
+      currentDocument.status = 'pending_publish';
+    }
+  }, 3000);
+
+  return useResponseSuccess(document);
 });
