@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { KnowledgeBase, KnowledgeDocument } from '#/api';
 
-import { onBeforeMount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
@@ -168,7 +168,7 @@ async function handleViewDocuments(row: KnowledgeBase, refresh = false) {
   }
 }
 
-onBeforeMount(stopDocumentRefresh);
+onBeforeUnmount(stopDocumentRefresh);
 onMounted(loadData);
 </script>
 
