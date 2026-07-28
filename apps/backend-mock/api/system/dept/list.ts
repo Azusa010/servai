@@ -19,6 +19,7 @@ function generateMockDataList(count: number) {
   for (let i = 0; i < count; i++) {
     const dataItem: Record<string, any> = {
       id: faker.string.uuid(),
+      tenantId: (i % 2) + 1,
       pid: 0,
       name: faker.commerce.department(),
       status: faker.helpers.arrayElement([0, 1]),
@@ -56,7 +57,9 @@ export default eventHandler(async (event) => {
     return unAuthorizedResponse(event);
   }
 
-  const listData = structuredClone(mockData);
+  const listData = structuredClone(mockData).filter(
+    (item) => item.tenantId === userinfo.tenantId,
+  );
 
   return useResponseSuccess(listData);
 });

@@ -19,6 +19,7 @@ function generateMockDataList(count: number) {
   for (let i = 0; i < count; i++) {
     const dataItem: Record<string, any> = {
       id: faker.string.uuid(),
+      tenantId: (i % 2) + 1,
       name: faker.commerce.product(),
       status: faker.helpers.arrayElement([0, 1]),
       createTime: formatterCN.format(
@@ -53,7 +54,9 @@ export default eventHandler(async (event) => {
     deptId,
     status,
   } = getQuery(event);
-  let listData = structuredClone(mockData);
+  let listData = structuredClone(mockData).filter(
+    (item) => item.tenantId === userinfo.tenantId,
+  );
   if (name) {
     listData = listData.filter((item) =>
       item.name.toLowerCase().includes(String(name).toLowerCase()),
