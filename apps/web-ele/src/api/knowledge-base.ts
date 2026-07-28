@@ -8,8 +8,31 @@ export interface KnowledgeBase {
   tenantId: number;
 }
 
+export interface KnowledgeDocument {
+  createTime: string;
+  createdBy: number;
+  id: number;
+  knowledgeBaseId: number;
+  mimeType: string;
+  name: string;
+  size: number;
+  status:
+    | 'archived'
+    | 'failed'
+    | 'parsing'
+    | 'pending_publish'
+    | 'published'
+    | 'uploading';
+  tenantId: number;
+}
+
 export interface KnowledgeBaseListResult {
   items: KnowledgeBase[];
+  total: number;
+}
+
+export interface KnowledgeDocumentListResult {
+  items: KnowledgeDocument[];
   total: number;
 }
 
@@ -36,8 +59,19 @@ export function uploadKnowledgeBaseFileApi(
   knowledgeBaseId: number,
   file: File,
 ) {
-  return requestClient.upload<{ url: string }>('/upload', {
+  return requestClient.upload<KnowledgeDocument>('/knowledge-base/upload', {
     file,
     knowledgeBaseId,
   });
+}
+
+export function getKnowledgeDocumentListApi(params: {
+  knowledgeBaseId: number;
+  page: number;
+  pageSize: number;
+}) {
+  return requestClient.get<KnowledgeDocumentListResult>(
+    '/knowledge-base/document/list',
+    { params },
+  );
 }

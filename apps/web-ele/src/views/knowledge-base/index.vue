@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { KnowledgeBase } from '#/api';
+import type { KnowledgeBase, KnowledgeDocument } from '#/api';
 
 import { onMounted, ref } from 'vue';
 
@@ -27,6 +27,7 @@ import {
   createKnowledgeBaseApi,
   getKnowledgeBaseListApi,
   uploadKnowledgeBaseFileApi,
+  getKnowledgeDocumentListApi,
 } from '#/api';
 
 const loading = ref(false);
@@ -42,6 +43,10 @@ const createName = ref('');
 const createDescription = ref('');
 const createStatus = ref<KnowledgeBase['status']>('enabled');
 const createFiles = ref<UploadUserFile[]>([]);
+const documentVisible = ref(false);
+const documentLoading = ref(false);
+const documentList = ref<KnowledgeDocument[]>([]);
+const documentKnowledgeBaseName = ref('');
 
 async function loadData() {
   loading.value = true;
@@ -108,6 +113,25 @@ async function handleCreateSubmit() {
   }
 }
 
+async function handleViewDocuments(row: KnowledgeBase) {
+  documentVisible.value = true;
+  documentLoading.value = true;
+  documentKnowledgeBaseName.value = row.name;
+
+  try {
+    const result = await getKnowledgeDocumentListApi({
+      knowledgeBaseId: row.id,
+      page: 1,
+      pageSize: 20,
+    });
+    documentList.value = result.items;
+  } catch {
+    documentList.value = [];
+  } finally {
+    documentLoading.value = false;
+  }
+}
+
 onMounted(loadData);
 </script>
 
@@ -143,6 +167,13 @@ onMounted(loadData);
             <ElTag :type="row.status === 'enabled' ? 'success' : 'info'">
               {{ row.status === 'enabled' ? '启用' : '停用' }}
             </ElTag>
+          </template>
+        </ElTable.TableColumn>
+        <ElTable.TableColumn label="操作" width="100">
+          <template #default="{ row }">
+            <ElButton link type="primary" @click="handleViewDocuments(row as KnowledgeBase)">
+              文档
+            </ElButton>
           </template>
         </ElTable.TableColumn>
       </ElTable>
@@ -208,6 +239,19 @@ onMounted(loadData);
           保存
         </ElButton>
       </template>
+    </ElDialog>
+    <ElDialog
+      v-model="documentVisible"
+      :title="`${documentKnowledgeBaseName} - 文档`"
+      width="800px"
+    >
+      <ElTable v-loading="documentLoading" :data="documentList">
+        <ElTable.TableColumn label="文件名" prop="name" />
+        <ElTable.TableColumn label="类型" prop="mimeType" />
+        <ElTable.TableColumn label="大小（字节）" prop="size" />
+        <ElTable.TableColumn label="状态" prop="status" />
+        <ElTable.TableColumn label="上传时间" prop="createTime" />
+      </ElTable>
     </ElDialog>
   </Page>
 </template>
