@@ -9,6 +9,9 @@ import { verifyAccessToken } from '~/utils/jwt-utils';
 import {
   MOCK_CHAT_CONVERSATIONS,
   MOCK_CHAT_MESSAGES,
+  MOCK_KNOWLEDGE_BASES,
+  MOCK_KNOWLEDGE_DOCUMENTS,
+  type ChatCitationInfo,
   type ChatMessageInfo,
 } from '~/utils/mock-data';
 import {
@@ -49,6 +52,40 @@ export default eventHandler(async (event) => {
     return useResponseError('会话不存在');
   }
 
+  const citations: ChatCitationInfo[] = [];
+
+  for (const document of MOCK_KNOWLEDGE_DOCUMENTS) {
+    if (
+      document.tenantId !== userinfo.tenantId ||
+      document.status !== 'published'
+    ) {
+      continue;
+    }
+
+    const knowledgeBase = MOCK_KNOWLEDGE_BASES.find(
+      (item) =>
+        item.id === document.knowledgeBaseId &&
+        item.tenantId === userinfo.tenantId &&
+        item.status === 'enabled',
+    );
+
+    if (!knowledgeBase) {
+      continue;
+    }
+
+    citations.push({
+      content: `匹配到已发布文档「${document.name}」`,
+      documentId: document.id,
+      documentName: document.name,
+      knowledgeBaseId: knowledgeBase.id,
+      knowledgeBaseName: knowledgeBase.name,
+    });
+
+    if (citations.length >= 3) {
+      break;
+    }
+  }
+
   const currentTime = new Date().toISOString();
 
   const userMessage: ChatMessageInfo = {
@@ -75,9 +112,21 @@ export default eventHandler(async (event) => {
     closed = true;
   });
 
-  const chunks = ['已收到你的问题: ', question, '。正在检索相关知识...'];
+  const chunks =
+    citations.length > 0
+      ? [
+          `已检索到 ${citations.length} 个相关文档：`,
+          citations.map((item) => item.documentName).join('、'),
+          `。关于“${question}”，当前为 Mock 流式回答。`,
+        ]
+      : ['当前没有可检索的已发布文档，暂时无法根据知识库回答。'];
 
   void (async () => {
+    await eventStream.push({
+      data: JSON.stringify({ items: citations }),
+      event: 'citations',
+    });
+
     for (const content of chunks) {
       await sleep(300);
 
@@ -93,7 +142,7 @@ export default eventHandler(async (event) => {
 
     if (!closed) {
       const assistantMessage: ChatMessageInfo = {
-        citations: [],
+        citations,
         content: chunks.join(''),
         conversationId,
         createTime: new Date().toISOString(),
