@@ -1,7 +1,11 @@
 import { eventHandler, readBody, setResponseStatus } from 'h3';
 import { verifyAccessToken } from '~/utils/jwt-utils';
 import { MOCK_KNOWLEDGE_BASES } from '~/utils/mock-data';
-import { unAuthorizedResponse, useResponseError, useResponseSuccess } from '~/utils/response';
+import {
+  unAuthorizedResponse,
+  useResponseError,
+  useResponseSuccess,
+} from '~/utils/response';
 
 export default eventHandler(async (event) => {
   const userinfo = verifyAccessToken(event);

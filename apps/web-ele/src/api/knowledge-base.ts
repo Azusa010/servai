@@ -23,3 +23,21 @@ export function getKnowledgeBaseListApi(params: {
     params,
   });
 }
+
+export function createKnowledgeBaseApi(data: {
+  description?: string;
+  name: string;
+  status?: KnowledgeBase['status'];
+}) {
+  return requestClient.post<KnowledgeBase>('/knowledge-base/create', data);
+}
+
+export function uploadKnowledgeBaseFileApi(
+  knowledgeBaseId: number,
+  file: File,
+) {
+  return requestClient.upload<{ url: string }>('/upload', {
+    file,
+    knowledgeBaseId,
+  });
+}
