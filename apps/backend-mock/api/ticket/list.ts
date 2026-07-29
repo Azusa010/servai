@@ -14,6 +14,7 @@ export default eventHandler((event) => {
     keyword,
     page = 1,
     pageSize = 20,
+    PICid,
     priority,
     status,
   } = getQuery(event);
@@ -28,6 +29,14 @@ export default eventHandler((event) => {
 
   if (priority) {
     listData = listData.filter((item) => item.priority === String(priority));
+  }
+
+  if (PICid !== undefined && PICid !== '') {
+    const assigneeId = Number(PICid);
+
+    if (Number.isInteger(assigneeId)) {
+      listData = listData.filter((item) => item.PICid === assigneeId);
+    }
   }
 
   if (keyword) {
