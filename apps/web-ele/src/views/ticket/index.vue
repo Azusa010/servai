@@ -15,6 +15,7 @@ import {
   ElInput,
   ElOption,
   ElSelect,
+  ElTag,
 } from 'element-plus';
 
 import { getTicketListApi } from '#/api';
@@ -27,6 +28,21 @@ const total = ref(0);
 const keyword = ref('');
 const priority = ref<TicketPriority>();
 const status = ref<TicketStatus>();
+
+const ticketStatusMap = {
+  Canceled: { text: '已取消', type: 'danger' },
+  Closed: { text: '已关闭', type: 'success' },
+  Pending_Confirmation: { text: '待确认', type: 'warning' },
+  Processing: { text: '处理中', type: 'primary' },
+  Suspended: { text: '已挂起', type: 'info' },
+  Unassigned: { text: '待分配', type: 'info' },
+} as const;
+
+const ticketPriorityMap = {
+  P1: 'danger',
+  P2: 'warning',
+  P3: 'success',
+} as const;
 
 async function loadData() {
   loading.value = true;
@@ -109,8 +125,20 @@ onMounted(loadData);
         <ElTableColumn label="工单编号" prop="ticketNo" />
         <ElTableColumn label="标题" prop="title" />
         <ElTableColumn label="客户" prop="consumer.customerName" />
-        <ElTableColumn label="优先级" prop="priority" />
-        <ElTableColumn label="状态" prop="status" />
+        <ElTableColumn label="优先级">
+          <template #default="{ row }">
+            <ElTag :type="ticketPriorityMap[row.priority as TicketPriority]">
+              {{ row.priority }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="状态">
+          <template #default="{ row }">
+            <ElTag :type="ticketStatusMap[row.status].type">
+              {{ ticketStatusMap[row.status]?.text }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
         <ElTableColumn label="负责人">
           <template #default="{ row }">
             {{ row.PICid ?? '未分配' }}
