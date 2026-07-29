@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type {
+  TicketDetail,
   TicketListItem,
   TicketPriority,
   TicketStatus,
@@ -12,6 +13,7 @@ import { Page } from '@vben/common-ui';
 
 import {
   ElCard,
+  ElDrawer,
   ElMessage,
   ElPagination,
   ElTable,
@@ -23,7 +25,7 @@ import {
   ElTag,
 } from 'element-plus';
 
-import { getTicketListApi, getUserOptionsApi } from '#/api';
+import { getTicketDetailApi, getTicketListApi, getUserOptionsApi } from '#/api';
 
 const loading = ref(false);
 const list = ref<TicketListItem[]>([]);
@@ -35,6 +37,9 @@ const priority = ref<TicketPriority>();
 const status = ref<TicketStatus>();
 const assigneeId = ref<number>();
 const userOptions = ref<UserOption[]>([]);
+const detailLoading = ref(false);
+const detailVisible = ref(false);
+const ticketDetail = ref<TicketDetail>();
 
 const ticketStatusMap = {
   Canceled: { text: '已取消', type: 'danger' },
@@ -108,6 +113,21 @@ function handleReset() {
   loadData();
 }
 
+async function handleRowClick(row: TicketListItem) {
+  detailVisible.value = true;
+  detailLoading.value = true;
+  ticketDetail.value = undefined;
+
+  try {
+    ticketDetail.value = await getTicketDetailApi(row.id);
+  } catch {
+    detailVisible.value = false;
+    ElMessage.error('工单详情加载失败');
+  } finally {
+    detailLoading.value = false;
+  }
+}
+
 function handlePageChange() {
   loadData();
 }
@@ -161,7 +181,12 @@ onMounted(() => {
         <ElButton type="primary" @click="handleSearch">查询</ElButton>
         <ElButton @click="handleReset">重置</ElButton>
       </div>
-      <ElTable v-loading="loading" :data="list" row-key="id">
+      <ElTable
+        v-loading="loading"
+        :data="list"
+        row-key="id"
+        @row-click="handleRowClick"
+      >
         <ElTableColumn label="工单编号" prop="ticketNo" />
         <ElTableColumn label="标题" prop="title" />
         <ElTableColumn label="客户" prop="consumer.customerName" />
@@ -197,5 +222,17 @@ onMounted(() => {
         @size-change="handlePageSizeChange"
       />
     </ElCard>
+    <ElDrawer
+      v-model="detailVisible"
+      :title="ticketDetail?.ticketNo ?? '工单详情'"
+      size="420px"
+    >
+      <div v-loading="detailLoading">
+        <template v-if="ticketDetail">
+          <h3>{{ ticketDetail.title }}</h3>
+          <p class="mt-3">{{ ticketDetail.description }}</p>
+        </template>
+      </div>
+    </ElDrawer>
   </Page>
 </template>
