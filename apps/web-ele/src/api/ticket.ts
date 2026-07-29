@@ -38,6 +38,7 @@ export function getTicketListApi(params: {
   keyword?: string;
   page: number;
   pageSize: number;
+  PICid?: number;
   priority?: TicketPriority;
   status?: TicketStatus;
 }) {
