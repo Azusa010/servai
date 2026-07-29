@@ -72,6 +72,86 @@ export interface TimezoneOption {
   timezone: string;
 }
 
+export type TicketStatus =
+  | 'Canceled'
+  | 'Closed'
+  | 'Pending_Confirmation'
+  | 'Processing'
+  | 'Suspended'
+  | 'Unassigned';
+
+export type TicketPriority = 'P1' | 'P2' | 'P3';
+
+export type TicketSource = 'chat' | 'manual' | 'rule' | 'toc';
+
+export type TicketAction =
+  | 'cancel'
+  | 'claim'
+  | 'close'
+  | 'confirm'
+  | 'create'
+  | 'resolve'
+  | 'resume'
+  | 'suspend'
+  | 'transfer';
+
+export type TicketType =
+  | 'complain'
+  | 'consult'
+  | 'demand'
+  | 'fault'
+  | 'operation'
+  | 'warning';
+
+export interface TicketAttachment {
+  id: number;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+}
+
+export interface TicketConsumer {
+  id: number;
+  customerName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+}
+
+export interface TicketTimeline {
+  id: number;
+  action: TicketAction;
+  actorId: null | number;
+  prePICid: null | number;
+  afterPICid: null | number;
+  preStatus: null | TicketStatus;
+  afterStatus: TicketStatus;
+  actionTime: string;
+  comment: string;
+}
+
+export interface TicketInfo {
+  id: number;
+  ticketNo: string;
+  tenantId: number;
+  title: string;
+  description: string;
+  type: TicketType;
+  priority: TicketPriority;
+  source: TicketSource;
+  sourceRef: null | string;
+  consumer: TicketConsumer;
+  status: TicketStatus;
+  PICid: null | number;
+  slaDeadline: string;
+  attachments: TicketAttachment[];
+  timelines: TicketTimeline[];
+  creatorId: null | number;
+  createTime: string;
+  updateTime: string;
+}
+
 export const MOCK_TENANTS: TenantInfo[] = [
   {
     code: 'demo',
@@ -116,6 +196,47 @@ export const MOCK_KNOWLEDGE_DOCUMENTS: KnowledgeDocumentInfo[] = [];
 export const MOCK_CHAT_CONVERSATIONS: ChatConversationInfo[] = [];
 export const MOCK_CHAT_MESSAGES: ChatMessageInfo[] = [];
 
+export const MOCK_TICKETS: TicketInfo[] = [
+  {
+    id: 1,
+    ticketNo: 'TK202607290001',
+    tenantId: 1,
+    title: '登录后无法查看订单',
+    description: '客户反馈登录成功后订单列表为空，需要客服协助处理。',
+    type: 'fault',
+    priority: 'P2',
+    source: 'toc',
+    sourceRef: 'toc-ticket-10001',
+    consumer: {
+      id: 1001,
+      customerName: '上海示例科技有限公司',
+      contactName: '李女士',
+      email: 'li@example.com',
+      phone: '13800005678',
+    },
+    status: 'Unassigned',
+    PICid: null,
+    slaDeadline: '2026-07-30T10:00:00.000Z',
+    attachments: [],
+    timelines: [
+      {
+        id: 1,
+        action: 'create',
+        actorId: null,
+        prePICid: null,
+        afterPICid: null,
+        preStatus: null,
+        afterStatus: 'Unassigned',
+        actionTime: '2026-07-29T02:00:00.000Z',
+        comment: '工单由 ToC 系统自动创建',
+      },
+    ],
+    creatorId: null,
+    createTime: '2026-07-29T02:00:00.000Z',
+    updateTime: '2026-07-29T02:00:00.000Z',
+  },
+];
+
 export const MOCK_USERS: UserInfo[] = [
   {
     id: 0,
@@ -154,7 +275,6 @@ export const MOCK_USERS: UserInfo[] = [
     homePath: '/dashboard/workspace',
   },
 ];
-
 export const MOCK_CODES = [
   // super
   {
