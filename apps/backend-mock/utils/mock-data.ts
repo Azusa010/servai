@@ -358,6 +358,15 @@ const dashboardMenus = [
     name: 'AIChat',
     path: '/chat',
   },
+  {
+    component: '/ticket/index',
+    meta:{
+      order: 2,
+      title: '工单管理',
+    },
+    name: 'Ticket',
+    path: '/ticket',
+  }
 ];
 
 const createDemosMenus = (role: 'admin' | 'super' | 'user') => {

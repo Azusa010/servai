@@ -1,0 +1,133 @@
+<script lang="ts" setup>
+import type { TicketListItem, TicketPriority, TicketStatus } from '#/api';
+
+import { onMounted, ref } from 'vue';
+
+import { Page } from '@vben/common-ui';
+
+import {
+  ElCard,
+  ElMessage,
+  ElPagination,
+  ElTable,
+  ElTableColumn,
+  ElButton,
+  ElInput,
+  ElOption,
+  ElSelect,
+} from 'element-plus';
+
+import { getTicketListApi } from '#/api';
+
+const loading = ref(false);
+const list = ref<TicketListItem[]>([]);
+const page = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const keyword = ref('');
+const priority = ref<TicketPriority>();
+const status = ref<TicketStatus>();
+
+async function loadData() {
+  loading.value = true;
+
+  try {
+    const result = await getTicketListApi({
+      keyword: keyword.value,
+      page: page.value,
+      pageSize: pageSize.value,
+      priority: priority.value,
+      status: status.value,
+    });
+
+    list.value = result.items;
+    total.value = result.total;
+  } catch {
+    list.value = [];
+    total.value = 0;
+    ElMessage.error('工单列表加载失败');
+  } finally {
+    loading.value = false;
+  }
+}
+
+function handleSearch() {
+  page.value = 1;
+  loadData();
+}
+
+function handleReset() {
+  keyword.value = '';
+  priority.value = undefined;
+  status.value = undefined;
+  page.value = 1;
+  loadData();
+}
+
+function handlePageChange() {
+  loadData();
+}
+
+function handlePageSizeChange() {
+  page.value = 1;
+  loadData();
+}
+
+onMounted(loadData);
+</script>
+
+<template>
+  <Page description="统一管理客户工单" title="工单中心">
+    <ElCard shadow="never">
+      <div class="mb-4 flex gap-3">
+        <ElInput
+          v-model="keyword"
+          clearable
+          placeholder="搜索工单编号、标题或客户"
+          @keyup.enter="handleSearch"
+        />
+
+        <ElSelect v-model="status" clearable placeholder="全部状态">
+          <ElOption label="待分配" value="Unassigned" />
+          <ElOption label="处理中" value="Processing" />
+          <ElOption label="待确认" value="Pending_Confirmation" />
+          <ElOption label="已挂起" value="Suspended" />
+          <ElOption label="已关闭" value="Closed" />
+          <ElOption label="已取消" value="Canceled" />
+        </ElSelect>
+
+        <ElSelect v-model="priority" clearable placeholder="全部优先级">
+          <ElOption label="P1" value="P1" />
+          <ElOption label="P2" value="P2" />
+          <ElOption label="P3" value="P3" />
+        </ElSelect>
+
+        <ElButton type="primary" @click="handleSearch">查询</ElButton>
+        <ElButton @click="handleReset">重置</ElButton>
+      </div>
+      <ElTable v-loading="loading" :data="list" row-key="id">
+        <ElTableColumn label="工单编号" prop="ticketNo" />
+        <ElTableColumn label="标题" prop="title" />
+        <ElTableColumn label="客户" prop="consumer.customerName" />
+        <ElTableColumn label="优先级" prop="priority" />
+        <ElTableColumn label="状态" prop="status" />
+        <ElTableColumn label="负责人">
+          <template #default="{ row }">
+            {{ row.PICid ?? '未分配' }}
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="更新时间" prop="updateTime" />
+      </ElTable>
+
+      <ElPagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        class="mt-4 justify-end"
+        layout="total, sizes, prev, pager, next"
+        :total="total"
+        @current-change="handlePageChange"
+        @size-change="handlePageSizeChange"
+      />
+    </ElCard>
+  </Page>
+</template>
