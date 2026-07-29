@@ -26,15 +26,18 @@ export default eventHandler(async (event) => {
     return unAuthorizedResponse(event);
   }
 
-  const body = await readBody<{ conversationId?: unknown; question?: unknown }>(
-    event,
-  );
+  const body = await readBody<{
+    conversationId?: unknown;
+    question?: unknown;
+    regenerate?: unknown;
+  }>(event);
 
-  const conversationId = Number(body.conversationId);
-  const question =
-    typeof body.question === 'string' ? body.question.trim() : '';
+  const conversationId = Number(body?.conversationId);
+  const inputQuestion =
+    typeof body?.question === 'string' ? body.question.trim() : '';
+  const regenerate = body?.regenerate === true;
 
-  if (!Number.isInteger(conversationId) || !question) {
+  if (!Number.isInteger(conversationId) || (!regenerate && !inputQuestion)) {
     setResponseStatus(event, 400);
     return useResponseError('会话编号或问题无效');
   }
@@ -51,6 +54,32 @@ export default eventHandler(async (event) => {
     setResponseStatus(event, 404);
     return useResponseError('会话不存在');
   }
+
+  const lastUserMessageIndex = regenerate
+    ? MOCK_CHAT_MESSAGES.findLastIndex(
+        (item) =>
+          item.conversationId === conversationId && item.role === 'user',
+      )
+    : -1;
+
+  const question = regenerate
+    ? (MOCK_CHAT_MESSAGES[lastUserMessageIndex]?.content ?? '')
+    : inputQuestion;
+
+  if (!question) {
+    setResponseStatus(event, 400);
+    return useResponseError('没有可以重新生成的问题');
+  }
+
+  const replacedAssistantIndex =
+    regenerate && lastUserMessageIndex >= 0
+      ? MOCK_CHAT_MESSAGES.findIndex(
+          (item, index) =>
+            index > lastUserMessageIndex &&
+            item.conversationId === conversationId &&
+            item.role === 'assistant',
+        )
+      : -1;
 
   const citations: ChatCitationInfo[] = [];
 
@@ -87,22 +116,22 @@ export default eventHandler(async (event) => {
   }
 
   const currentTime = new Date().toISOString();
+  if (!regenerate) {
+    const userMessage: ChatMessageInfo = {
+      citations: [],
+      content: question,
+      conversationId,
+      createTime: currentTime,
+      id: Math.max(...MOCK_CHAT_MESSAGES.map((item) => item.id), 0) + 1,
+      role: 'user',
+    };
 
-  const userMessage: ChatMessageInfo = {
-    citations: [],
-    content: question,
-    conversationId,
-    createTime: currentTime,
-    id: Math.max(...MOCK_CHAT_MESSAGES.map((item) => item.id), 0) + 1,
-    role: 'user',
-  };
+    MOCK_CHAT_MESSAGES.push(userMessage);
 
-  MOCK_CHAT_MESSAGES.push(userMessage);
-
-  if (conversation.title === '新会话') {
-    conversation.title = question.slice(0, 20);
+    if (conversation.title === '新会话') {
+      conversation.title = question.slice(0, 20);
+    }
   }
-
   conversation.updateTime = currentTime;
 
   const eventStream = createEventStream(event);
@@ -141,6 +170,10 @@ export default eventHandler(async (event) => {
     }
 
     if (!closed) {
+      if (replacedAssistantIndex >= 0) {
+        MOCK_CHAT_MESSAGES.splice(replacedAssistantIndex, 1);
+      }
+
       const assistantMessage: ChatMessageInfo = {
         citations,
         content: chunks.join(''),
