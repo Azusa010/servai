@@ -20,6 +20,7 @@ import {
   getChatConversationListApi,
   getChatMessageListApi,
 } from '#/api';
+import Icon from '../../../../../packages/@core/ui-kit/shadcn-ui/src/components/icon/icon.vue';
 
 const loading = ref(false);
 const conversations = ref<ChatConversation[]>([]);
@@ -83,6 +84,41 @@ function handleStop() {
   sending.value = false;
 }
 
+function startAssistantStream(
+  data: {
+    conversationId: number;
+    question?: string;
+    regenerate?: boolean;
+  },
+  assistantMessage: ChatMessage,
+) {
+  sending.value = true;
+  const request = askChatStreamApi(data, {
+    onCitations(items) {
+      assistantMessage.citations = items;
+    },
+    onDelta(delta) {
+      assistantMessage.content += delta;
+    },
+    onDone(messageId) {
+      assistantMessage.id = messageId;
+    },
+  });
+
+  stopCurrentStream = request.abort;
+
+  void request.promise
+    .catch((error) => {
+      if (error?.name !== 'AbortError') {
+        ElMessage.error('问答请求失败');
+      }
+    })
+    .finally(() => {
+      sending.value = false;
+      stopCurrentStream = undefined;
+    });
+}
+
 function handleSend() {
   const conversationId = activeConversationId.value;
   const content = question.value.trim();
@@ -113,39 +149,41 @@ function handleSend() {
 
   messages.value.push(userMessage, assistantMessage);
   question.value = '';
-  sending.value = true;
 
-  const request = askChatStreamApi(
+  const activeConversation = conversations.value.find(
+    (item) => item.id === conversationId,
+  );
+
+  if (activeConversation?.title === '新会话') {
+    activeConversation.title = content.slice(0, 20);
+  }
+
+  startAssistantStream(
     {
       conversationId,
       question: content,
     },
-    {
-      onCitations(items) {
-        assistantMessage.citations = items;
-      },
-      onDelta(delta) {
-        assistantMessage.content += delta;
-      },
-      onDone(messageId) {
-        assistantMessage.id = messageId;
-      },
-    },
+    assistantMessage,
   );
+}
 
-  stopCurrentStream = request.abort;
+function handleRegenerate(message: ChatMessage) {
+  const conversationId = activeConversationId.value;
 
-  void request.promise
-    .catch((error) => {
-      if (error?.name !== 'AbortError') {
-        ElMessage.error('问答请求失败');
-      }
-    })
-    .finally(() => {
-      sending.value = false;
-      stopCurrentStream = undefined;
-      void loadConversations();
-    });
+  if (!conversationId || sending.value || message.role !== 'assistant') {
+    return;
+  }
+
+  message.content = '';
+  message.citations = [];
+
+  startAssistantStream(
+    {
+      conversationId,
+      regenerate: true,
+    },
+    message,
+  );
 }
 
 onBeforeUnmount(handleStop);
@@ -195,7 +233,7 @@ onMounted(loadConversations);
 
           <div v-else class="space-y-3">
             <ElCard
-              v-for="message in messages"
+              v-for="(message, index) in messages"
               :key="message.id"
               shadow="never"
             >
@@ -224,6 +262,23 @@ onMounted(loadConversations);
                     {{ citation.documentName }}
                   </ElTag>
                 </div>
+              </div>
+              <div
+                v-if="
+                  message.role === 'assistant' &&
+                  index === messages.length - 1 &&
+                  !sending
+                "
+                class="mt-3"
+              >
+                <ElButton
+                  link
+                  type="primary"
+                  @click="handleRegenerate(message)"
+                >
+                  <Icon icon="carbon:redo" />
+                  重新生成
+                </ElButton>
               </div>
             </ElCard>
           </div>

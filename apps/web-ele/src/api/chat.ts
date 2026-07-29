@@ -75,7 +75,8 @@ export interface ChatStreamCallbacks {
 export function askChatStreamApi(
   data: {
     conversationId: number;
-    question: string;
+    question?: string;
+    regenerate?: boolean;
   },
   callbacks: ChatStreamCallbacks = {},
 ) {

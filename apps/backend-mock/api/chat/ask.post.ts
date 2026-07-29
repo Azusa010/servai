@@ -3,6 +3,7 @@ import {
   eventHandler,
   readBody,
   setResponseStatus,
+  setResponseHeader,
 } from 'h3';
 
 import { verifyAccessToken } from '~/utils/jwt-utils';
@@ -197,5 +198,9 @@ export default eventHandler(async (event) => {
     }
   })();
 
-  return eventStream.send();
+  const sendPromise = eventStream.send();
+
+  setResponseHeader(event, 'Connection', 'close');
+
+  return sendPromise;
 });
