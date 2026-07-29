@@ -1,5 +1,10 @@
 <script lang="ts" setup>
-import type { TicketListItem, TicketPriority, TicketStatus } from '#/api';
+import type {
+  TicketListItem,
+  TicketPriority,
+  TicketStatus,
+  UserOption,
+} from '#/api';
 
 import { onMounted, ref } from 'vue';
 
@@ -18,7 +23,7 @@ import {
   ElTag,
 } from 'element-plus';
 
-import { getTicketListApi } from '#/api';
+import { getTicketListApi, getUserOptionsApi } from '#/api';
 
 const loading = ref(false);
 const list = ref<TicketListItem[]>([]);
@@ -28,6 +33,7 @@ const total = ref(0);
 const keyword = ref('');
 const priority = ref<TicketPriority>();
 const status = ref<TicketStatus>();
+const userOptions = ref<UserOption[]>([]);
 
 const ticketStatusMap = {
   Canceled: { text: '已取消', type: 'danger' },
@@ -43,6 +49,25 @@ const ticketPriorityMap = {
   P2: 'warning',
   P3: 'success',
 } as const;
+
+async function loadUserOptions() {
+  try {
+    userOptions.value = await getUserOptionsApi();
+  } catch {
+    userOptions.value = [];
+    ElMessage.error('负责人列表加载失败');
+  }
+}
+
+function getPICName(picId: null | number) {
+  if (picId === null) {
+    return '未分配';
+  }
+
+  return (
+    userOptions.value.find((item) => item.id === picId)?.realName ?? '未知用户'
+  );
+}
 
 async function loadData() {
   loading.value = true;
@@ -89,7 +114,10 @@ function handlePageSizeChange() {
   loadData();
 }
 
-onMounted(loadData);
+onMounted(()=>{
+  loadData();
+  loadUserOptions();
+});
 </script>
 
 <template>
@@ -141,7 +169,7 @@ onMounted(loadData);
         </ElTableColumn>
         <ElTableColumn label="负责人">
           <template #default="{ row }">
-            {{ row.PICid ?? '未分配' }}
+            {{ getPICName(row.PICid) }}
           </template>
         </ElTableColumn>
         <ElTableColumn label="更新时间" prop="updateTime" />
