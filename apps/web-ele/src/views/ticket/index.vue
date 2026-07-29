@@ -26,6 +26,8 @@ import {
   ElOption,
   ElSelect,
   ElTag,
+  ElTimeline,
+  ElTimelineItem,
 } from 'element-plus';
 
 import { getTicketDetailApi, getTicketListApi, getUserOptionsApi } from '#/api';
@@ -39,7 +41,6 @@ const keyword = ref('');
 const priority = ref<TicketPriority>();
 const status = ref<TicketStatus>();
 const assigneeId = ref<number>();
-const userOptions = ref<UserOption[]>([]);
 const detailLoading = ref(false);
 const detailVisible = ref(false);
 const ticketDetail = ref<TicketDetail>();
@@ -58,6 +59,9 @@ const ticketPriorityMap = {
   P2: 'warning',
   P3: 'success',
 } as const;
+
+const userOptions = ref<UserOption[]>([]);
+
 
 async function loadUserOptions() {
   try {
@@ -78,8 +82,28 @@ function getPICName(picId: null | number) {
   );
 }
 
+const ticketActionMap = {
+  cancel: '取消工单',
+  claim: '领取工单',
+  close: '关闭工单',
+  confirm: '确认解决',
+  create: '创建工单',
+  resolve: '标记解决',
+  resume: '恢复处理',
+  suspend: '挂起工单',
+  transfer: '转交工单',
+} as const;
+
+
+function getOperatorName(actorId: null | number) {
+  if (actorId === null) {
+    return '系统';
+  }
+  return getPICName(actorId);
+}
+
 function formatTime(value: string) {
-  return new Date(value).toLocaleDateString('zh-CN', {
+  return new Date(value).toLocaleString('zh-CN', {
     hour12: false,
   });
 }
@@ -295,6 +319,38 @@ onMounted(() => {
               {{ ticketDetail.consumer.email }}
             </ElDescriptionsItem>
           </ElDescriptions>
+          <ElDivider />
+
+          <h3 class="mb-4">处理进度</h3>
+
+          <ElTimeline>
+            <ElTimelineItem
+              v-for="timeline in ticketDetail.timelines"
+              :key="timeline.id"
+              :timestamp="formatTime(timeline.actionTime)"
+              placement="top"
+              type="primary"
+            >
+              <div class="flex items-center gap-2">
+                <strong>{{ ticketActionMap[timeline.action] }}</strong>
+
+                <ElTag
+                  size="small"
+                  :type="ticketStatusMap[timeline.afterStatus].type"
+                >
+                  {{ ticketStatusMap[timeline.afterStatus].text }}
+                </ElTag>
+              </div>
+
+              <div class="mt-2 text-sm">
+                操作人：{{ getOperatorName(timeline.actorId) }}
+              </div>
+
+              <div v-if="timeline.comment" class="mt-1 text-sm">
+                备注：{{ timeline.comment }}
+              </div>
+            </ElTimelineItem>
+          </ElTimeline>
         </template>
       </div>
     </ElDrawer>
