@@ -14,6 +14,9 @@ import { Page } from '@vben/common-ui';
 import {
   ElCard,
   ElDrawer,
+  ElDescriptions,
+  ElDescriptionsItem,
+  ElDivider,
   ElMessage,
   ElPagination,
   ElTable,
@@ -73,6 +76,12 @@ function getPICName(picId: null | number) {
   return (
     userOptions.value.find((item) => item.id === picId)?.realName ?? '未知用户'
   );
+}
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleDateString('zh-CN', {
+    hour12: false,
+  });
 }
 
 async function loadData() {
@@ -229,8 +238,63 @@ onMounted(() => {
     >
       <div v-loading="detailLoading">
         <template v-if="ticketDetail">
-          <h3>{{ ticketDetail.title }}</h3>
-          <p class="mt-3">{{ ticketDetail.description }}</p>
+          <ElDescriptions :column="1" border title="工单信息">
+            <ElDescriptionsItem label="标题">
+              {{ ticketDetail.title }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="描述">
+              {{ ticketDetail.description }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="优先级">
+              <ElTag :type="ticketPriorityMap[ticketDetail.priority]">
+                {{ ticketDetail.priority }}
+              </ElTag>
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="状态">
+              <ElTag :type="ticketStatusMap[ticketDetail.status].type">
+                {{ ticketStatusMap[ticketDetail.status].text }}
+              </ElTag>
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="负责人">
+              {{ getPICName(ticketDetail.PICid) }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="创建时间">
+              {{ formatTime(ticketDetail.createTime) }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="更新时间">
+              {{ formatTime(ticketDetail.updateTime) }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="SLA 截止时间">
+              {{ formatTime(ticketDetail.slaDeadline) }}
+            </ElDescriptionsItem>
+          </ElDescriptions>
+
+          <ElDivider />
+
+          <ElDescriptions :column="1" border title="客户信息">
+            <ElDescriptionsItem label="客户名称">
+              {{ ticketDetail.consumer.customerName }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="联系人">
+              {{ ticketDetail.consumer.contactName }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="电话">
+              {{ ticketDetail.consumer.phone }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="邮箱">
+              {{ ticketDetail.consumer.email }}
+            </ElDescriptionsItem>
+          </ElDescriptions>
         </template>
       </div>
     </ElDrawer>
