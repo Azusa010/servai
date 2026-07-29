@@ -5,6 +5,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
+import { useDebounceFn } from '@vueuse/core';
 import {
   ElButton,
   ElCard,
@@ -32,6 +33,7 @@ const messagesLoading = ref(false);
 const messages = ref<ChatMessage[]>([]);
 const question = ref('');
 const sending = ref(false);
+const keyword = ref('');
 
 let stopCurrentStream: (() => void) | undefined;
 
@@ -42,6 +44,7 @@ async function loadConversations() {
     const result = await getChatConversationListApi({
       page: 1,
       pageSize: 50,
+      keyword: keyword.value.trim() || undefined,
     });
 
     conversations.value = result.items;
@@ -53,6 +56,10 @@ async function loadConversations() {
     loading.value = false;
   }
 }
+
+const handleSearch = useDebounceFn(() => {
+  void loadConversations();
+}, 300);
 
 async function handleSelectConversation(conversationId: number) {
   handleStop();
@@ -234,6 +241,14 @@ onMounted(loadConversations);
         </template>
 
         <div v-loading="loading">
+          <ElInput
+            v-model="keyword"
+            class="mb-3"
+            clearable
+            placeholder="搜索历史会话"
+            @input="handleSearch"
+          />
+
           <ElEmpty
             v-if="conversations.length === 0"
             :image-size="60"
@@ -243,15 +258,20 @@ onMounted(loadConversations);
           <div
             v-for="item in conversations"
             :key="item.id"
-            class="mb-2 flex gap-2"
+            class="mb-2 flex items-center overflow-hidden rounded-md border transition-colors"
+            :class="
+              activeConversationId === item.id
+                ? 'border-[var(--el-color-primary)] bg-[var(--el-color-primary)] text-white'
+                : 'border-[var(--el-border-color)] bg-[var(--el-bg-color)] text-[var(--el-text-color-regular)] hover:border-[var(--el-color-primary)]'
+            "
           >
-            <ElButton
-              class="min-w-0 flex-1"
-              :type="activeConversationId === item.id ? 'primary' : 'default'"
+            <button
+              type="button"
+              class="min-w-0 flex-1 truncate px-3 py-2 text-left"
               @click="handleSelectConversation(item.id)"
             >
               {{ item.title }}
-            </ElButton>
+            </button>
 
             <ElPopconfirm
               title="确定删除这个会话吗？"
@@ -260,9 +280,15 @@ onMounted(loadConversations);
               @confirm="handleDeleteConversation(item.id)"
             >
               <template #reference>
-                <ElButton :disabled="sending" plain type="danger" @click.stop>
-                  删除
-                </ElButton>
+                <button
+                  type="button"
+                  :disabled="sending"
+                  :aria-label="`删除会话：${item.title}`"
+                  class="flex shrink-0 items-center self-stretch px-3 transition-colors hover:text-[var(--el-color-danger)] disabled:cursor-not-allowed disabled:opacity-50"
+                  @click.stop
+                >
+                  <Icon class="size-4" icon="carbon:trash-can" />
+                </button>
               </template>
             </ElPopconfirm>
           </div>
