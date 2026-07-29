@@ -33,6 +33,7 @@ const total = ref(0);
 const keyword = ref('');
 const priority = ref<TicketPriority>();
 const status = ref<TicketStatus>();
+const assigneeId = ref<number>();
 const userOptions = ref<UserOption[]>([]);
 
 const ticketStatusMap = {
@@ -77,6 +78,7 @@ async function loadData() {
       keyword: keyword.value,
       page: page.value,
       pageSize: pageSize.value,
+      PICid: assigneeId.value,
       priority: priority.value,
       status: status.value,
     });
@@ -101,6 +103,7 @@ function handleReset() {
   keyword.value = '';
   priority.value = undefined;
   status.value = undefined;
+  assigneeId.value = undefined;
   page.value = 1;
   loadData();
 }
@@ -114,7 +117,7 @@ function handlePageSizeChange() {
   loadData();
 }
 
-onMounted(()=>{
+onMounted(() => {
   loadData();
   loadUserOptions();
 });
@@ -144,6 +147,15 @@ onMounted(()=>{
           <ElOption label="P1" value="P1" />
           <ElOption label="P2" value="P2" />
           <ElOption label="P3" value="P3" />
+        </ElSelect>
+
+        <ElSelect v-model="assigneeId" clearable placeholder="全部负责人">
+          <ElOption
+            v-for="user in userOptions"
+            :key="user.id"
+            :label="user.realName"
+            :value="user.id"
+          />
         </ElSelect>
 
         <ElButton type="primary" @click="handleSearch">查询</ElButton>
