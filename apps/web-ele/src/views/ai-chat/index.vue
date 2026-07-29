@@ -24,7 +24,6 @@ const sending = ref(false);
 
 let stopCurrentStream: (() => void) | undefined;
 
-
 async function loadConversations() {
   loading.value = true;
 
@@ -45,6 +44,7 @@ async function loadConversations() {
 }
 
 async function handleSelectConversation(conversationId: number) {
+  handleStop();
   activeConversationId.value = conversationId;
   messagesLoading.value = true;
 
@@ -62,6 +62,7 @@ async function handleSelectConversation(conversationId: number) {
 }
 
 async function handleCreateConversation() {
+  handleStop();
   const conversation = await createChatConversationApi();
 
   conversations.value.unshift(conversation);
@@ -69,8 +70,78 @@ async function handleCreateConversation() {
   messages.value = [];
 }
 
+function handleStop() {
+  stopCurrentStream?.();
+  stopCurrentStream = undefined;
+  sending.value = false;
+}
 
+function handleSend() {
+  const conversationId = activeConversationId.value;
+  const content = question.value.trim();
 
+  if (!conversationId || !content || sending.value) {
+    return;
+  }
+
+  const createTime = new Date().toISOString();
+
+  const userMessage: ChatMessage = {
+    citations: [],
+    content,
+    conversationId,
+    createTime,
+    id: -Date.now(),
+    role: 'user',
+  };
+
+  const assistantMessage: ChatMessage = {
+    citations: [],
+    content: '',
+    conversationId,
+    createTime,
+    id: -Date.now() - 1,
+    role: 'assistant',
+  };
+
+  messages.value.push(userMessage, assistantMessage);
+  question.value = '';
+  sending.value = true;
+
+  const request = askChatStreamApi(
+    {
+      conversationId,
+      question: content,
+    },
+    {
+      onCitations(items) {
+        assistantMessage.citations = items;
+      },
+      onDelta(delta) {
+        assistantMessage.content += delta;
+      },
+      onDone(messageId) {
+        assistantMessage.id = messageId;
+      },
+    },
+  );
+
+  stopCurrentStream = request.abort;
+
+  void request.promise
+    .catch((error) => {
+      if (error?.name !== 'AbortError') {
+        ElMessage.error('问答请求失败');
+      }
+    })
+    .finally(() => {
+      sending.value = false;
+      stopCurrentStream = undefined;
+      void loadConversations();
+    });
+}
+
+onBeforeUnmount(handleStop);
 onMounted(loadConversations);
 </script>
 
@@ -131,7 +202,38 @@ onMounted(loadConversations);
             </ElCard>
           </div>
         </div>
+        <div v-if="activeConversationId" class="mt-4 border-t pt-4">
+          <ElInput
+            v-model="question"
+            :disabled="sending"
+            :rows="3"
+            placeholder="请输入问题"
+            type="textarea"
+            @keyup.ctrl.enter="handleSend"
+          />
+
+          <div class="mt-3 flex justify-end">
+            <ElButton v-if="sending" type="danger" @click="handleStop">
+              停止生成
+            </ElButton>
+
+            <ElButton
+              v-else
+              :disabled="!question.trim()"
+              type="primary"
+              @click="handleSend"
+            >
+              发送
+            </ElButton>
+          </div>
+        </div>
       </ElCard>
     </div>
   </Page>
 </template>
+
+<style scoped>
+.el-button + .el-button {
+  margin-left: 0px;
+}
+</style>
