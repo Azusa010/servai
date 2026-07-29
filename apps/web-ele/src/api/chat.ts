@@ -66,8 +66,10 @@ export function getChatMessageListApi(params: {
 }
 
 export interface ChatStreamCallbacks {
+  onCitations?: (items: ChatCitation[]) => void;
+  onDelta?: (content: string) => void;
+  onDone?: (messageId: number) => void;
   onEnd?: () => void;
-  onMessage?: (chunk: string) => void;
 }
 
 export function askChatStreamApi(
@@ -75,16 +77,57 @@ export function askChatStreamApi(
     conversationId: number;
     question: string;
   },
-  callbacks: ChatStreamCallbacks,
+  callbacks: ChatStreamCallbacks = {},
 ) {
   const controller = new AbortController();
+  let buffer = '';
+
+  function handleChunk(chunk: string) {
+    buffer += chunk;
+
+    const eventBlocks = buffer.split(/\r?\n\r?\n/);
+    buffer = eventBlocks.pop() ?? '';
+
+    for (const block of eventBlocks) {
+      let eventName = '';
+      const dataLines: string[] = [];
+
+      for (const line of block.split(/\r?\n/)) {
+        if (line.startsWith('event: ')) {
+          eventName = line.slice(6).trim();
+        }
+
+        if (line.startsWith('data: ')) {
+          dataLines.push(line.slice(5).trim());
+        }
+      }
+
+      if (!eventName || dataLines.length === 0) {
+        continue;
+      }
+
+      const payload = JSON.parse(dataLines.join('\n'));
+
+      if (eventName === 'citations') {
+        callbacks.onCitations?.(payload.items);
+      }
+
+      if (eventName === 'delta') {
+        callbacks.onDelta?.(payload.content);
+      }
+
+      if (eventName === 'done') {
+        callbacks.onDone?.(payload.messageId);
+      }
+    }
+  }
 
   const promise = requestClient.postSSE('/chat/ask', data, {
     headers: {
       'Content-Type': 'application/json',
     },
     onEnd: callbacks.onEnd,
-    onMessage: callbacks.onMessage,
+    onMessage: handleChunk,
     signal: controller.signal,
   });
 

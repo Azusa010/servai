@@ -57,8 +57,6 @@ export interface ChatMessageInfo {
   role: 'assistant' | 'user';
 }
 
-
-
 export interface UserInfo {
   id: number;
   tenantId: number;
@@ -230,6 +228,15 @@ const dashboardMenus = [
         },
       },
     ],
+  },
+  {
+    component: '/ai-chat/index',
+    meta: {
+      order: 1,
+      title: 'AI 问答',
+    },
+    name: 'AIChat',
+    path: '/chat',
   },
 ];
 
