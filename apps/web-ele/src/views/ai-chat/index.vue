@@ -5,7 +5,14 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
-import { ElButton, ElCard, ElEmpty, ElInput, ElMessage } from 'element-plus';
+import {
+  ElButton,
+  ElCard,
+  ElEmpty,
+  ElInput,
+  ElMessage,
+  ElTag,
+} from 'element-plus';
 
 import {
   askChatStreamApi,
@@ -199,6 +206,25 @@ onMounted(loadConversations);
               <div class="mt-2 whitespace-pre-wrap">
                 {{ message.content }}
               </div>
+              <div
+                v-if="
+                  message.role === 'assistant' && message.citations.length > 0
+                "
+                class="mt-3 border-t pt-3"
+              >
+                <div class="mb-2 text-sm">引用来源</div>
+                <div class="flex flex-wrap gap-2">
+                  <ElTag
+                    v-for="citation in message.citations"
+                    :key="citation.documentId"
+                    :title="citation.content"
+                    type="info"
+                  >
+                    {{ citation.knowledgeBaseName }} /
+                    {{ citation.documentName }}
+                  </ElTag>
+                </div>
+              </div>
             </ElCard>
           </div>
         </div>
@@ -209,7 +235,7 @@ onMounted(loadConversations);
             :rows="3"
             placeholder="请输入问题"
             type="textarea"
-            @keyup.ctrl.enter="handleSend"
+            @keyup.enter="handleSend"
           />
 
           <div class="mt-3 flex justify-end">
