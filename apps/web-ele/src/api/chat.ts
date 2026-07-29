@@ -137,3 +137,7 @@ export function askChatStreamApi(
     promise,
   };
 }
+
+export function deleteChatConversationApi(data: { id: number }) {
+  return requestClient.post('/chat/conversation/delete', data);
+}

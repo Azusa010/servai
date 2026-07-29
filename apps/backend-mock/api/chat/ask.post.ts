@@ -1,19 +1,18 @@
+import type { ChatCitationInfo,ChatMessageInfo } from '~/utils/mock-data';
+
 import {
   createEventStream,
   eventHandler,
   readBody,
-  setResponseStatus,
   setResponseHeader,
+  setResponseStatus,
 } from 'h3';
-
 import { verifyAccessToken } from '~/utils/jwt-utils';
 import {
   MOCK_CHAT_CONVERSATIONS,
   MOCK_CHAT_MESSAGES,
   MOCK_KNOWLEDGE_BASES,
   MOCK_KNOWLEDGE_DOCUMENTS,
-  type ChatCitationInfo,
-  type ChatMessageInfo,
 } from '~/utils/mock-data';
 import {
   sleep,

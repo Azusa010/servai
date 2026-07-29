@@ -11,15 +11,18 @@ import {
   ElEmpty,
   ElInput,
   ElMessage,
+  ElPopconfirm,
   ElTag,
 } from 'element-plus';
 
 import {
   askChatStreamApi,
   createChatConversationApi,
+  deleteChatConversationApi,
   getChatConversationListApi,
   getChatMessageListApi,
 } from '#/api';
+
 import Icon from '../../../../../packages/@core/ui-kit/shadcn-ui/src/components/icon/icon.vue';
 
 const loading = ref(false);
@@ -76,6 +79,33 @@ async function handleCreateConversation() {
   conversations.value.unshift(conversation);
   activeConversationId.value = conversation.id;
   messages.value = [];
+}
+
+async function handleDeleteConversation(conversationId: number) {
+  if (sending.value) {
+    return;
+  }
+
+  const deletingActive = activeConversationId.value === conversationId;
+
+  await deleteChatConversationApi({ id: conversationId });
+
+  conversations.value = conversations.value.filter(
+    (item) => item.id !== conversationId,
+  );
+
+  if (deletingActive) {
+    activeConversationId.value = undefined;
+    messages.value = [];
+    question.value = '';
+
+    const nextConversation = conversations.value[0];
+
+    if (nextConversation) {
+      await handleSelectConversation(nextConversation.id);
+    }
+  }
+  ElMessage.success('会话已删除');
 }
 
 function handleStop() {
@@ -210,15 +240,32 @@ onMounted(loadConversations);
             description="暂无会话"
           />
 
-          <ElButton
+          <div
             v-for="item in conversations"
             :key="item.id"
-            class="mb-2 w-full"
-            :type="activeConversationId === item.id ? 'primary' : 'default'"
-            @click="handleSelectConversation(item.id)"
+            class="mb-2 flex gap-2"
           >
-            {{ item.title }}
-          </ElButton>
+            <ElButton
+              class="min-w-0 flex-1"
+              :type="activeConversationId === item.id ? 'primary' : 'default'"
+              @click="handleSelectConversation(item.id)"
+            >
+              {{ item.title }}
+            </ElButton>
+
+            <ElPopconfirm
+              title="确定删除这个会话吗？"
+              confirm-button-text="删除"
+              cancel-button-text="取消"
+              @confirm="handleDeleteConversation(item.id)"
+            >
+              <template #reference>
+                <ElButton :disabled="sending" plain type="danger" @click.stop>
+                  删除
+                </ElButton>
+              </template>
+            </ElPopconfirm>
+          </div>
         </div>
       </ElCard>
 
