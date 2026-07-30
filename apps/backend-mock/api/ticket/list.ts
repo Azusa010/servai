@@ -17,6 +17,7 @@ export default eventHandler((event) => {
     PICid,
     priority,
     status,
+    type,
   } = getQuery(event);
 
   let listData = MOCK_TICKETS.filter(
@@ -29,6 +30,10 @@ export default eventHandler((event) => {
 
   if (priority) {
     listData = listData.filter((item) => item.priority === String(priority));
+  }
+
+  if(type){
+    listData = listData.filter((item)=> item.type === String(type));
   }
 
   if (PICid !== undefined && PICid !== '') {

@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { FormInstance, FormRules } from 'element-plus';
+
 import type {
   TicketDetail,
   TicketListItem,
@@ -7,18 +9,22 @@ import type {
   UserOption,
 } from '#/api';
 
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
+import { useDebounceFn } from '@vueuse/core';
 import {
   ElButton,
   ElCard,
+  ElDatePicker,
   ElDescriptions,
   ElDescriptionsItem,
   ElDialog,
   ElDivider,
   ElDrawer,
+  ElForm,
+  ElFormItem,
   ElInput,
   ElMessage,
   ElMessageBox,
@@ -34,6 +40,7 @@ import {
 
 import { getTicketDetailApi, getTicketListApi, getUserOptionsApi } from '#/api';
 
+import { useTicketCreate } from './use-ticket-create';
 import { useTicketOperation } from './use-ticket-operation';
 import { useTicketTransfer } from './use-ticket-transfer';
 
@@ -256,6 +263,91 @@ async function handleSubmitTransfer() {
   await submitTransfer(ticketDetail.value.id);
 }
 
+const { createForm, createVisible, creating, openCreate, submitCreate } =
+  useTicketCreate(async (ticket) => {
+    page.value = 1;
+    await loadData();
+
+    ticketDetail.value = ticket;
+    detailVisible.value = true;
+  });
+
+const inputSearch = useDebounceFn(() => {
+  void handleSearch();
+}, 300);
+
+const createFormRef = ref<FormInstance>();
+
+const createRules: FormRules = {
+  title: [
+    {
+      required: true,
+      message: '请输入工单标题',
+      trigger: 'blur',
+      whitespace: true,
+    },
+  ],
+  description: [
+    {
+      required: true,
+      message: '请输入问题描述',
+      trigger: 'blur',
+      whitespace: true,
+    },
+  ],
+  type: [{ required: true, message: '请选择工单类型', trigger: 'change' }],
+  priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
+  slaDeadline: [
+    { required: true, message: '请选择 SLA 截止时间', trigger: 'change' },
+    {
+      trigger: 'change',
+      validator: (_rule, value, callback) => {
+        const timestamp = new Date(String(value)).getTime();
+
+        if (Number.isNaN(timestamp) || timestamp <= Date.now()) {
+          callback(new Error('SLA 截止时间必须晚于当前时间'));
+          return;
+        }
+
+        callback();
+      },
+    },
+  ],
+  'consumer.customerName': [
+    { required: true, message: '请输入客户名称', trigger: 'blur' },
+  ],
+  'consumer.contactName': [
+    { required: true, message: '请输入联系人', trigger: 'blur' },
+  ],
+  'consumer.phone': [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+  ],
+  'consumer.email': [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' },
+  ],
+};
+
+async function handleOpenCreate() {
+  openCreate();
+  await nextTick();
+  createFormRef.value?.clearValidate();
+}
+
+async function handleSubmitCreate() {
+  if (!createFormRef.value) {
+    return;
+  }
+
+  try {
+    await createFormRef.value.validate();
+  } catch {
+    return;
+  }
+
+  await submitCreate();
+}
+
 onMounted(() => {
   loadData();
   loadUserOptions();
@@ -271,9 +363,15 @@ onMounted(() => {
           clearable
           placeholder="搜索工单编号、标题或客户"
           @keyup.enter="handleSearch"
+          @input="inputSearch"
         />
 
-        <ElSelect v-model="status" clearable placeholder="全部状态">
+        <ElSelect
+          v-model="status"
+          clearable
+          placeholder="全部状态"
+          @change="handleSearch"
+        >
           <ElOption label="待分配" value="Unassigned" />
           <ElOption label="处理中" value="Processing" />
           <ElOption label="待确认" value="Pending_Confirmation" />
@@ -282,13 +380,23 @@ onMounted(() => {
           <ElOption label="已取消" value="Canceled" />
         </ElSelect>
 
-        <ElSelect v-model="priority" clearable placeholder="全部优先级">
+        <ElSelect
+          v-model="priority"
+          clearable
+          placeholder="全部优先级"
+          @change="handleSearch"
+        >
           <ElOption label="P1" value="P1" />
           <ElOption label="P2" value="P2" />
           <ElOption label="P3" value="P3" />
         </ElSelect>
 
-        <ElSelect v-model="assigneeId" clearable placeholder="全部负责人">
+        <ElSelect
+          v-model="assigneeId"
+          clearable
+          placeholder="全部负责人"
+          @change="handleSearch"
+        >
           <ElOption
             v-for="user in userOptions"
             :key="user.id"
@@ -297,8 +405,8 @@ onMounted(() => {
           />
         </ElSelect>
 
-        <ElButton type="primary" @click="handleSearch">查询</ElButton>
         <ElButton @click="handleReset">重置</ElButton>
+        <ElButton type="primary" @click="handleOpenCreate"> 新建工单 </ElButton>
       </div>
       <ElTable
         v-loading="loading"
@@ -533,6 +641,96 @@ onMounted(() => {
           @click="handleSubmitTransfer"
         >
           确认转交
+        </ElButton>
+      </template>
+    </ElDialog>
+    <ElDialog
+      v-model="createVisible"
+      append-to-body
+      title="新建工单"
+      width="600px"
+    >
+      <ElForm
+        ref="createFormRef"
+        :model="createForm"
+        label-width="90px"
+        :rules="createRules"
+      >
+        <ElFormItem label="标题" prop="title">
+          <ElInput
+            v-model="createForm.title"
+            maxlength="100"
+            placeholder="请输入工单标题"
+          />
+        </ElFormItem>
+
+        <ElFormItem label="描述" prop="description">
+          <ElInput
+            v-model="createForm.description"
+            :rows="4"
+            maxlength="1000"
+            placeholder="请输入问题描述"
+            type="textarea"
+          />
+        </ElFormItem>
+
+        <ElFormItem label="类型" prop="type">
+          <ElSelect v-model="createForm.type" class="w-full">
+            <ElOption label="投诉" value="complain" />
+            <ElOption label="咨询" value="consult" />
+            <ElOption label="需求" value="demand" />
+            <ElOption label="故障" value="fault" />
+            <ElOption label="运营" value="operation" />
+            <ElOption label="预警" value="warning" />
+          </ElSelect>
+        </ElFormItem>
+
+        <ElFormItem label="优先级" prop="priority">
+          <ElSelect v-model="createForm.priority" class="w-full">
+            <ElOption label="P1" value="P1" />
+            <ElOption label="P2" value="P2" />
+            <ElOption label="P3" value="P3" />
+          </ElSelect>
+        </ElFormItem>
+
+        <ElFormItem label="SLA 截止" prop="slaDeadline">
+          <ElDatePicker
+            v-model="createForm.slaDeadline"
+            class="w-full"
+            placeholder="请选择截止时间"
+            type="datetime"
+            value-format="YYYY-MM-DDTHH:mm:ss.SSSZ"
+          />
+        </ElFormItem>
+
+        <ElDivider>客户信息</ElDivider>
+
+        <ElFormItem label="客户名称" prop="consumer.customerName">
+          <ElInput v-model="createForm.consumer.customerName" />
+        </ElFormItem>
+
+        <ElFormItem label="联系人" prop="consumer.contactName">
+          <ElInput v-model="createForm.consumer.contactName" />
+        </ElFormItem>
+
+        <ElFormItem label="电话" prop="consumer.phone">
+          <ElInput v-model="createForm.consumer.phone" />
+        </ElFormItem>
+
+        <ElFormItem label="邮箱" prop="consumer.email">
+          <ElInput v-model="createForm.consumer.email" />
+        </ElFormItem>
+      </ElForm>
+
+      <template #footer>
+        <ElButton @click="createVisible = false">取消</ElButton>
+
+        <ElButton
+          :loading="creating"
+          type="primary"
+          @click="handleSubmitCreate"
+        >
+          创建工单
         </ElButton>
       </template>
     </ElDialog>
