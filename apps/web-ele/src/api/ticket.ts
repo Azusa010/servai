@@ -105,3 +105,15 @@ export function getTicketDetailApi(id: number) {
     params: { id },
   });
 }
+
+
+export interface OperateTicketParams {
+  action: Exclude<TicketAction, 'create'>;
+  afterPICid?: number;
+  comment?: string;
+  id: number;
+}
+
+export function operateTicketApi(data: OperateTicketParams) {
+  return requestClient.post<TicketDetail>('/ticket/operate', data);
+}
