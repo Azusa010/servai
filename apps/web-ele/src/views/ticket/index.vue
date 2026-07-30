@@ -32,6 +32,8 @@ import {
 
 import { getTicketDetailApi, getTicketListApi, getUserOptionsApi } from '#/api';
 
+import { useTicketOperation } from './use-ticket-operation';
+
 const loading = ref(false);
 const list = ref<TicketListItem[]>([]);
 const page = ref(1);
@@ -61,7 +63,6 @@ const ticketPriorityMap = {
 } as const;
 
 const userOptions = ref<UserOption[]>([]);
-
 
 async function loadUserOptions() {
   try {
@@ -93,7 +94,6 @@ const ticketActionMap = {
   suspend: '挂起工单',
   transfer: '转交工单',
 } as const;
-
 
 function getOperatorName(actorId: null | number) {
   if (actorId === null) {
@@ -168,6 +168,33 @@ function handlePageChange() {
 function handlePageSizeChange() {
   page.value = 1;
   loadData();
+}
+
+const { executeOperation, operating } = useTicketOperation(async (ticket) => {
+  ticketDetail.value = ticket;
+  await loadData();
+});
+
+async function handleClaim() {
+  if (!ticketDetail.value) {
+    return;
+  }
+  await executeOperation({
+    action: 'claim',
+    comment: '客服领取工单',
+    id: ticketDetail.value.id,
+  });
+}
+
+async function handleStatusOperation(action: 'resolve' | 'resume' | 'suspend') {
+  if (!ticketDetail.value) {
+    return;
+  }
+  await executeOperation({
+    action,
+    comment: ticketActionMap[action],
+    id: ticketDetail.value.id,
+  });
 }
 
 onMounted(() => {
@@ -353,6 +380,41 @@ onMounted(() => {
           </ElTimeline>
         </template>
       </div>
+      <template #footer>
+        <ElButton
+          v-if="ticketDetail?.status === 'Unassigned'"
+          :loading="operating"
+          type="primary"
+          @click="handleClaim"
+        >
+          领取工单
+        </ElButton>
+        <template v-if="ticketDetail?.status === 'Processing'">
+          <ElButton
+            :loading="operating"
+            type="warning"
+            @click="handleStatusOperation('suspend')"
+          >
+            挂起工单
+          </ElButton>
+
+          <ElButton
+            :loading="operating"
+            type="success"
+            @click="handleStatusOperation('resolve')"
+          >
+            标记解决
+          </ElButton>
+        </template>
+        <ElButton
+          v-if="ticketDetail?.status === 'Suspended'"
+          :loading="operating"
+          type="primary"
+          @click="handleStatusOperation('resume')"
+        >
+          恢复处理
+        </ElButton>
+      </template>
     </ElDrawer>
   </Page>
 </template>
