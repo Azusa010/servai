@@ -18,6 +18,8 @@ export default eventHandler((event) => {
     priority,
     status,
     type,
+    endTime,
+    startTime,
   } = getQuery(event);
 
   let listData = MOCK_TICKETS.filter(
@@ -32,8 +34,8 @@ export default eventHandler((event) => {
     listData = listData.filter((item) => item.priority === String(priority));
   }
 
-  if(type){
-    listData = listData.filter((item)=> item.type === String(type));
+  if (type) {
+    listData = listData.filter((item) => item.type === String(type));
   }
 
   if (PICid !== undefined && PICid !== '') {
@@ -55,6 +57,26 @@ export default eventHandler((event) => {
         item.consumer.contactName,
       ].some((value) => value.toLowerCase().includes(normalizedKeyword)),
     );
+  }
+
+  if (startTime) {
+    const startTimeStamp = new Date(String(startTime)).getTime();
+
+    if (!Number.isNaN(startTimeStamp)) {
+      listData = listData.filter(
+        (item) => new Date(item.createTime).getTime() >= startTimeStamp,
+      );
+    }
+  }
+
+  if (endTime) {
+    const endTimeStamp = new Date(String(endTime)).getTime();
+
+    if (!Number.isNaN(endTimeStamp)) {
+      listData = listData.filter(
+        (item) => new Date(item.createTime).getTime() <= endTimeStamp,
+      );
+    }
   }
 
   return usePageResponseSuccess(page as string, pageSize as string, listData);

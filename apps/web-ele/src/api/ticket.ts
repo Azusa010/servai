@@ -89,12 +89,15 @@ export interface TicketListResult {
 }
 
 export function getTicketListApi(params: {
+  endTime?: string;
   keyword?: string;
   page: number;
   pageSize: number;
   PICid?: number;
   priority?: TicketPriority;
+  startTime?: string;
   status?: TicketStatus;
+  type?: TicketType;
 }) {
   return requestClient.get<TicketListResult>('/ticket/list', {
     params,
@@ -129,3 +132,4 @@ export interface CreateTicketParams {
 export function createTicketApi(data: CreateTicketParams) {
   return requestClient.post<TicketDetail>('/ticket/create', data);
 }
+
