@@ -106,7 +106,6 @@ export function getTicketDetailApi(id: number) {
   });
 }
 
-
 export interface OperateTicketParams {
   action: Exclude<TicketAction, 'create'>;
   afterPICid?: number;
@@ -116,4 +115,17 @@ export interface OperateTicketParams {
 
 export function operateTicketApi(data: OperateTicketParams) {
   return requestClient.post<TicketDetail>('/ticket/operate', data);
+}
+
+export interface CreateTicketParams {
+  consumer: Omit<TicketConsumer, 'id'>;
+  description: string;
+  priority: TicketPriority;
+  slaDeadline: string;
+  title: string;
+  type: TicketType;
+}
+
+export function createTicketApi(data: CreateTicketParams) {
+  return requestClient.post<TicketDetail>('/ticket/create', data);
 }
