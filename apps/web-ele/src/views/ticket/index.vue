@@ -12,19 +12,20 @@ import { onMounted, ref } from 'vue';
 import { Page } from '@vben/common-ui';
 
 import {
+  ElButton,
   ElCard,
-  ElDrawer,
   ElDescriptions,
   ElDescriptionsItem,
   ElDivider,
+  ElDrawer,
+  ElInput,
   ElMessage,
+  ElMessageBox,
+  ElOption,
   ElPagination,
+  ElSelect,
   ElTable,
   ElTableColumn,
-  ElButton,
-  ElInput,
-  ElOption,
-  ElSelect,
   ElTag,
   ElTimeline,
   ElTimelineItem,
@@ -190,6 +191,32 @@ async function handleStatusOperation(action: 'resolve' | 'resume' | 'suspend') {
   if (!ticketDetail.value) {
     return;
   }
+  await executeOperation({
+    action,
+    comment: ticketActionMap[action],
+    id: ticketDetail.value.id,
+  });
+}
+
+async function handleTerminalOperation(action: 'cancel' | 'close') {
+  if (!ticketDetail.value) {
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确认${ticketActionMap[action]}吗？`,
+      '操作确认',
+      {
+        cancelButtonText: '取消',
+        confirmButtonText: '确认',
+        type: 'warning',
+      },
+    );
+  } catch {
+    return;
+  }
+
   await executeOperation({
     action,
     comment: ticketActionMap[action],
@@ -389,6 +416,14 @@ onMounted(() => {
         >
           领取工单
         </ElButton>
+        <ElButton
+          v-if="ticketDetail?.status === 'Unassigned'"
+          :loading="operating"
+          type="danger"
+          @click="handleTerminalOperation('cancel')"
+        >
+          取消工单
+        </ElButton>
         <template v-if="ticketDetail?.status === 'Processing'">
           <ElButton
             :loading="operating"
@@ -413,6 +448,14 @@ onMounted(() => {
           @click="handleStatusOperation('resume')"
         >
           恢复处理
+        </ElButton>
+        <ElButton
+          v-if="ticketDetail?.status === 'Pending_Confirmation'"
+          :loading="operating"
+          type="danger"
+          @click="handleTerminalOperation('close')"
+        >
+          关闭工单
         </ElButton>
       </template>
     </ElDrawer>
