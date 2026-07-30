@@ -16,6 +16,7 @@ import {
   ElCard,
   ElDescriptions,
   ElDescriptionsItem,
+  ElDialog,
   ElDivider,
   ElDrawer,
   ElInput,
@@ -34,6 +35,7 @@ import {
 import { getTicketDetailApi, getTicketListApi, getUserOptionsApi } from '#/api';
 
 import { useTicketOperation } from './use-ticket-operation';
+import { useTicketTransfer } from './use-ticket-transfer';
 
 const loading = ref(false);
 const list = ref<TicketListItem[]>([]);
@@ -224,6 +226,36 @@ async function handleTerminalOperation(action: 'cancel' | 'close') {
   });
 }
 
+const transferableStatuses: TicketStatus[] = [
+  'Pending_Confirmation',
+  'Processing',
+  'Suspended',
+];
+
+const {
+  currentPICid,
+  openTransfer,
+  submitTransfer,
+  targetPICid,
+  transferVisible,
+} = useTicketTransfer(executeOperation);
+
+function handleOpenTransfer() {
+  if (!ticketDetail.value) {
+    return;
+  }
+
+  openTransfer(ticketDetail.value.PICid);
+}
+
+async function handleSubmitTransfer() {
+  if (!ticketDetail.value) {
+    return;
+  }
+
+  await submitTransfer(ticketDetail.value.id);
+}
+
 onMounted(() => {
   loadData();
   loadUserOptions();
@@ -409,6 +441,15 @@ onMounted(() => {
       </div>
       <template #footer>
         <ElButton
+          v-if="
+            ticketDetail && transferableStatuses.includes(ticketDetail.status)
+          "
+          :loading="operating"
+          @click="handleOpenTransfer"
+        >
+          转交负责人
+        </ElButton>
+        <ElButton
           v-if="ticketDetail?.status === 'Unassigned'"
           :loading="operating"
           type="primary"
@@ -459,5 +500,41 @@ onMounted(() => {
         </ElButton>
       </template>
     </ElDrawer>
+    <ElDialog
+      v-model="transferVisible"
+      append-to-body
+      title="转交负责人"
+      width="420px"
+    >
+      <ElSelect
+        v-model="targetPICid"
+        class="w-full"
+        placeholder="请选择新的负责人"
+      >
+        <ElOption
+          v-for="user in userOptions"
+          :key="user.id"
+          :disabled="user.id === currentPICid"
+          :label="
+            user.id === currentPICid
+              ? `${user.realName}（当前）`
+              : user.realName
+          "
+          :value="user.id"
+        />
+      </ElSelect>
+
+      <template #footer>
+        <ElButton @click="transferVisible = false">取消</ElButton>
+
+        <ElButton
+          :loading="operating"
+          type="primary"
+          @click="handleSubmitTransfer"
+        >
+          确认转交
+        </ElButton>
+      </template>
+    </ElDialog>
   </Page>
 </template>

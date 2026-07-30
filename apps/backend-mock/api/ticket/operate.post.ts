@@ -63,6 +63,10 @@ export default eventHandler(async (event) => {
       return useResponseError('请选择新的负责人');
     }
 
+    if (targetPICid === ticket.PICid) {
+      setResponseStatus(event, 400);
+      return useResponseError('新负责人不能与当前负责人相同');
+    }
     const targetUser = MOCK_USERS.find(
       (item) => item.id === targetPICid && item.tenantId === userinfo.tenantId,
     );
