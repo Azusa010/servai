@@ -6,6 +6,7 @@ import type {
   TicketListItem,
   TicketPriority,
   TicketStatus,
+  TicketType,
   UserOption,
 } from '#/api';
 
@@ -43,6 +44,7 @@ import { getTicketDetailApi, getTicketListApi, getUserOptionsApi } from '#/api';
 import { useTicketCreate } from './use-ticket-create';
 import { useTicketOperation } from './use-ticket-operation';
 import { useTicketTransfer } from './use-ticket-transfer';
+import { useTicketFilterQuery } from './use-ticket-filter-query';
 
 const loading = ref(false);
 const list = ref<TicketListItem[]>([]);
@@ -119,16 +121,20 @@ function formatTime(value: string) {
 }
 
 async function loadData() {
+  syncFilterQuery();
   loading.value = true;
 
   try {
     const result = await getTicketListApi({
+      endTime: createTimeRange.value?.[1],
       keyword: keyword.value,
       page: page.value,
       pageSize: pageSize.value,
       PICid: assigneeId.value,
       priority: priority.value,
+      startTime: createTimeRange.value?.[0],
       status: status.value,
+      type: ticketType.value,
     });
 
     list.value = result.items;
@@ -153,6 +159,9 @@ function handleReset() {
   status.value = undefined;
   assigneeId.value = undefined;
   page.value = 1;
+  ticketType.value = undefined;
+  createTimeRange.value = undefined;
+
   loadData();
 }
 
@@ -348,6 +357,21 @@ async function handleSubmitCreate() {
   await submitCreate();
 }
 
+const ticketType = ref<TicketType>();
+
+const createTimeRange = ref<[string, string]>();
+
+const { syncFilterQuery } = useTicketFilterQuery({
+  assigneeId,
+  createTimeRange,
+  keyword,
+  page,
+  pageSize,
+  priority,
+  status,
+  ticketType,
+});
+
 onMounted(() => {
   loadData();
   loadUserOptions();
@@ -392,6 +416,20 @@ onMounted(() => {
         </ElSelect>
 
         <ElSelect
+          v-model="ticketType"
+          clearable
+          placeholder="全部类型"
+          @change="handleSearch"
+        >
+          <ElOption label="投诉" value="complain" />
+          <ElOption label="咨询" value="consult" />
+          <ElOption label="需求" value="demand" />
+          <ElOption label="故障" value="fault" />
+          <ElOption label="运营" value="operation" />
+          <ElOption label="预警" value="warning" />
+        </ElSelect>
+
+        <ElSelect
           v-model="assigneeId"
           clearable
           placeholder="全部负责人"
@@ -408,6 +446,17 @@ onMounted(() => {
         <ElButton @click="handleReset">重置</ElButton>
         <ElButton type="primary" @click="handleOpenCreate"> 新建工单 </ElButton>
       </div>
+
+      <ElDatePicker
+        v-model="createTimeRange"
+        clearable
+        end-placeholder="结束时间"
+        range-separator="至"
+        start-placeholder="开始时间"
+        type="datetimerange"
+        value-format="YYYY-MM-DDTHH:mm:ss.SSSZ"
+        @change="handleSearch"
+      />
       <ElTable
         v-loading="loading"
         :data="list"
