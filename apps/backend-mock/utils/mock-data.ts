@@ -371,6 +371,7 @@ const dashboardMenus = [
   {
     component: '/ticket/index',
     meta: {
+      fullPathKey: false,
       order: 2,
       title: '工单管理',
     },
