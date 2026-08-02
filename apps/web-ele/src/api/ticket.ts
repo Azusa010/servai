@@ -102,6 +102,7 @@ export function getTicketListApi(params: {
   pageSize: number;
   PICid?: number;
   priority?: TicketPriority;
+  slaStatus?: TicketSlaStatus;
   startTime?: string;
   status?: TicketStatus;
   type?: TicketType;

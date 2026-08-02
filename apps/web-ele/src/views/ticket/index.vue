@@ -8,6 +8,7 @@ import type {
   TicketStatus,
   TicketType,
   UserOption,
+  TicketSlaStatus,
 } from '#/api';
 
 import { computed, nextTick, onMounted, ref } from 'vue';
@@ -136,6 +137,7 @@ async function loadData() {
       startTime: createTimeRange.value?.[0],
       status: status.value,
       type: ticketType.value,
+      slaStatus: slaStatus.value,
     });
 
     list.value = result.items;
@@ -162,6 +164,7 @@ function handleReset() {
   assigneeId.value = undefined;
   page.value = 1;
   ticketType.value = undefined;
+  slaStatus.value = undefined;
   createTimeRange.value = undefined;
 
   loadData();
@@ -374,6 +377,8 @@ const departmentOptions = computed(() => {
   return Array.from(departments, ([id, name]) => ({ id, name }));
 });
 
+const slaStatus = ref<TicketSlaStatus>();
+
 const { syncFilterQuery } = useTicketFilterQuery({
   assigneeId,
   createTimeRange,
@@ -383,6 +388,7 @@ const { syncFilterQuery } = useTicketFilterQuery({
   pageSize,
   priority,
   status,
+  slaStatus,
   ticketType,
 });
 
@@ -417,7 +423,18 @@ onMounted(() => {
           <ElOption label="已关闭" value="Closed" />
           <ElOption label="已取消" value="Canceled" />
         </ElSelect>
-
+        <ElSelect
+          v-model="slaStatus"
+          clearable
+          placeholder="全部 SLA"
+          @change="handleSearch"
+        >
+          <ElOption label="正常" value="normal" />
+          <ElOption label="即将超时" value="warning" />
+          <ElOption label="已超时" value="overdue" />
+          <ElOption label="已暂停" value="paused" />
+          <ElOption label="已完成" value="completed" />
+        </ElSelect>
         <ElSelect
           v-model="priority"
           clearable
@@ -503,6 +520,25 @@ onMounted(() => {
           <template #default="{ row }">
             <ElTag :type="ticketStatusMap[row.status].type">
               {{ ticketStatusMap[row.status]?.text }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="SLA状态">
+          <template #default="{ row }">
+            <ElTag v-if="row.slaStatus === 'normal'" type="success">
+              正常
+            </ElTag>
+            <ElTag v-else-if="row.slaStatus === 'warning'" type="warning">
+              即将超时
+            </ElTag>
+            <ElTag v-else-if="row.slaStatus === 'overdue'" type="danger">
+              已超时
+            </ElTag>
+            <ElTag v-else-if="row.slaStatus === 'paused'" type="info">
+              已暂停
+            </ElTag>
+            <ElTag v-else-if="row.slaStatus === 'completed'" type="success">
+              已完成
             </ElTag>
           </template>
         </ElTableColumn>

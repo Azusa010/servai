@@ -1,7 +1,6 @@
 import type { TicketInfo, TicketPriority, TicketType } from '~/utils/mock-data';
 
 import { eventHandler, readBody, setResponseStatus } from 'h3';
-
 import { verifyAccessToken } from '~/utils/jwt-utils';
 import { MOCK_TICKETS } from '~/utils/mock-data';
 import {
@@ -9,6 +8,7 @@ import {
   useResponseError,
   useResponseSuccess,
 } from '~/utils/response';
+import { getTicketSlaStatus } from '~/utils/ticket-utils';
 
 interface CreateTicketBody {
   consumer: {
@@ -141,5 +141,8 @@ export default eventHandler(async (event) => {
 
   MOCK_TICKETS.unshift(ticket);
 
-  return useResponseSuccess(ticket);
+  return useResponseSuccess({
+    ...ticket,
+    slaStatus: getTicketSlaStatus(ticket),
+  });
 });

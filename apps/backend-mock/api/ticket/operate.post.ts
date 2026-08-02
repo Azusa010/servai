@@ -8,7 +8,7 @@ import {
   useResponseError,
   useResponseSuccess,
 } from '~/utils/response';
-import { getNextTicketStatus } from '~/utils/ticket-utils';
+import { getNextTicketStatus, getTicketSlaStatus } from '~/utils/ticket-utils';
 
 interface OperateTicketBody {
   action: Exclude<TicketAction, 'create'>;
@@ -80,6 +80,30 @@ export default eventHandler(async (event) => {
   }
 
   const actionTime = new Date().toISOString();
+  if (body.action === 'resume') {
+    const suspendedTimeline = [...ticket.timelines]
+      .toReversed()
+      .find((item) => item.action === 'suspend');
+
+    if (suspendedTimeline) {
+      const suspendedAt = new Date(suspendedTimeline.actionTime).getTime();
+      const resumedAt = new Date(actionTime).getTime();
+      const deadline = new Date(ticket.slaDeadline).getTime();
+
+      if (
+        !Number.isNaN(suspendedAt) &&
+        !Number.isNaN(deadline) &&
+        resumedAt > deadline
+      ) {
+        const suspendedDuration = resumedAt - suspendedAt;
+
+        ticket.slaDeadline = new Date(
+          deadline + suspendedDuration,
+        ).toISOString();
+      }
+    }
+  }
+
   const timelineId =
     Math.max(
       0,
@@ -103,5 +127,8 @@ export default eventHandler(async (event) => {
     preStatus,
   });
 
-  return useResponseSuccess(ticket);
+  return useResponseSuccess({
+    ...ticket,
+    slaStatus: getTicketSlaStatus(ticket),
+  });
 });

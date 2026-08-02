@@ -21,14 +21,23 @@ export default eventHandler((event) => {
     startTime,
     status,
     type,
+    slaStatus,
   } = getQuery(event);
 
   let listData = MOCK_TICKETS.filter(
     (item) => item.tenantId === userinfo.tenantId,
   );
 
+  const now = Date.now();
+
   if (status) {
     listData = listData.filter((item) => item.status === String(status));
+  }
+
+  if (slaStatus) {
+    listData = listData.filter(
+      (item) => getTicketSlaStatus(item, now) === String(slaStatus),
+    );
   }
 
   if (priority) {
@@ -97,7 +106,7 @@ export default eventHandler((event) => {
 
   const result = listData.map((item) => ({
     ...item,
-    slaStatus: getTicketSlaStatus(item),
+    slaStatus: getTicketSlaStatus(item,now),
   }));
 
   return usePageResponseSuccess(page as string, pageSize as string, result);

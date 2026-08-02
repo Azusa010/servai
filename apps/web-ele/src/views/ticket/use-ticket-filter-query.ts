@@ -1,4 +1,9 @@
-import type { TicketPriority, TicketStatus, TicketType } from '#/api';
+import type {
+  TicketPriority,
+  TicketSlaStatus,
+  TicketStatus,
+  TicketType,
+} from '#/api';
 
 import type { Ref } from 'vue';
 
@@ -14,6 +19,7 @@ interface TicketFilterRefs {
   status: Ref<TicketStatus | undefined>;
   ticketType: Ref<TicketType | undefined>;
   deptId: Ref<number | undefined>;
+  slaStatus: Ref<TicketSlaStatus | undefined>;
 }
 
 function readString(value: unknown) {
@@ -39,6 +45,9 @@ export function useTicketFilterQuery(filters: TicketFilterRefs) {
   filters.pageSize.value = readPositiveNumber(route.query.pageSize) ?? 20;
   filters.assigneeId.value = readPositiveNumber(route.query.PICid);
   filters.deptId.value = readPositiveNumber(route.query.deptId);
+  filters.slaStatus.value = readString(route.query.slaStatus) as
+    | TicketSlaStatus
+    | undefined;
 
   filters.priority.value = readString(route.query.priority) as
     | TicketPriority
@@ -69,6 +78,7 @@ export function useTicketFilterQuery(filters: TicketFilterRefs) {
         startTime: filters.createTimeRange.value?.[0],
         status: filters.status.value,
         type: filters.ticketType.value,
+        slaStatus: filters.slaStatus.value,
       },
     });
   }
