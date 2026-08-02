@@ -12,11 +12,13 @@ export default eventHandler((event) => {
 
   const {
     deptId,
+    endTime,
     keyword,
     page = 1,
     pageSize = 20,
     PICid,
     priority,
+    startTime,
     status,
     type,
   } = getQuery(event);
@@ -44,7 +46,25 @@ export default eventHandler((event) => {
       listData = listData.filter((item) => item.PICid === assigneeId);
     }
   }
+  if (startTime) {
+    const startDate = new Date(String(startTime));
 
+    if (!Number.isNaN(startDate.getTime())) {
+      listData = listData.filter(
+        (item) => new Date(item.createTime).getTime() >= startDate.getTime(),
+      );
+    }
+  }
+
+  if (endTime) {
+    const endDate = new Date(String(endTime));
+
+    if (!Number.isNaN(endDate.getTime())) {
+      listData = listData.filter(
+        (item) => new Date(item.createTime).getTime() <= endDate.getTime(),
+      );
+    }
+  }
   if (deptId !== undefined && deptId !== '') {
     const departmentId = Number(deptId);
 
