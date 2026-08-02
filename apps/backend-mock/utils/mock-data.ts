@@ -62,6 +62,8 @@ export interface UserInfo {
   tenantId: number;
   password: string;
   realName: string;
+  deptId: number;
+  deptName: string;
   roles: string[];
   username: string;
   homePath?: string;
@@ -246,6 +248,8 @@ export const MOCK_USERS: UserInfo[] = [
     roles: ['super'],
     username: 'vben',
     homePath: '/dashboard/workspace',
+    deptId: 100,
+    deptName: '运营管理部',
   },
   {
     id: 1,
@@ -255,6 +259,8 @@ export const MOCK_USERS: UserInfo[] = [
     roles: ['admin'],
     username: 'admin',
     homePath: '/dashboard/workspace',
+    deptId: 101,
+    deptName: '客服一组',
   },
   {
     id: 2,
@@ -264,6 +270,8 @@ export const MOCK_USERS: UserInfo[] = [
     roles: ['user'],
     username: 'jack',
     homePath: '/dashboard/analytics',
+    deptId: 102,
+    deptName: '技术支持组',
   },
   {
     id: 3,
@@ -273,6 +281,8 @@ export const MOCK_USERS: UserInfo[] = [
     roles: ['admin'],
     username: 'admin',
     homePath: '/dashboard/workspace',
+    deptId: 201,
+    deptName: '客服一组',
   },
 ];
 export const MOCK_CODES = [
@@ -360,13 +370,13 @@ const dashboardMenus = [
   },
   {
     component: '/ticket/index',
-    meta:{
+    meta: {
       order: 2,
       title: '工单管理',
     },
     name: 'Ticket',
     path: '/ticket',
-  }
+  },
 ];
 
 const createDemosMenus = (role: 'admin' | 'super' | 'user') => {

@@ -10,7 +10,7 @@ import type {
   UserOption,
 } from '#/api';
 
-import { nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
@@ -126,6 +126,7 @@ async function loadData() {
 
   try {
     const result = await getTicketListApi({
+      deptId: deptId.value,
       endTime: createTimeRange.value?.[1],
       keyword: keyword.value,
       page: page.value,
@@ -154,6 +155,7 @@ function handleSearch() {
 }
 
 function handleReset() {
+  deptId.value = undefined;
   keyword.value = '';
   priority.value = undefined;
   status.value = undefined;
@@ -361,9 +363,21 @@ const ticketType = ref<TicketType>();
 
 const createTimeRange = ref<[string, string]>();
 
+const deptId = ref<number>();
+const departmentOptions = computed(() => {
+  const departments = new Map<number, string>();
+
+  for (const user of userOptions.value) {
+    departments.set(user.deptId, user.deptName);
+  }
+
+  return Array.from(departments, ([id, name]) => ({ id, name }));
+});
+
 const { syncFilterQuery } = useTicketFilterQuery({
   assigneeId,
   createTimeRange,
+  deptId,
   keyword,
   page,
   pageSize,
@@ -442,7 +456,19 @@ onMounted(() => {
             :value="user.id"
           />
         </ElSelect>
-
+        <ElSelect
+          v-model="deptId"
+          clearable
+          placeholder="全部部门"
+          @change="handleSearch"
+        >
+          <ElOption
+            v-for="department in departmentOptions"
+            :key="department.id"
+            :label="department.name"
+            :value="department.id"
+          />
+        </ElSelect>
         <ElButton @click="handleReset">重置</ElButton>
         <ElButton type="primary" @click="handleOpenCreate"> 新建工单 </ElButton>
       </div>

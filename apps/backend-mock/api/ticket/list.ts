@@ -1,6 +1,6 @@
 import { eventHandler, getQuery } from 'h3';
 import { verifyAccessToken } from '~/utils/jwt-utils';
-import { MOCK_TICKETS } from '~/utils/mock-data';
+import { MOCK_TICKETS, MOCK_USERS } from '~/utils/mock-data';
 import { unAuthorizedResponse, usePageResponseSuccess } from '~/utils/response';
 
 export default eventHandler((event) => {
@@ -11,6 +11,7 @@ export default eventHandler((event) => {
   }
 
   const {
+    deptId,
     keyword,
     page = 1,
     pageSize = 20,
@@ -43,6 +44,23 @@ export default eventHandler((event) => {
 
     if (Number.isInteger(assigneeId)) {
       listData = listData.filter((item) => item.PICid === assigneeId);
+    }
+  }
+
+  if (deptId !== undefined && deptId !== '') {
+    const departmentId = Number(deptId);
+
+    if (Number.isInteger(departmentId)) {
+      const departmentPICIds = new Set(
+        MOCK_USERS.filter(
+          (user) =>
+            user.tenantId === userinfo.tenantId && user.deptId === departmentId,
+        ).map((user) => user.id),
+      );
+
+      listData = listData.filter(
+        (item) => item.PICid !== null && departmentPICIds.has(item.PICid),
+      );
     }
   }
 

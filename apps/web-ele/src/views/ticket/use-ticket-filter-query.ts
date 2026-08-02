@@ -13,6 +13,7 @@ interface TicketFilterRefs {
   priority: Ref<TicketPriority | undefined>;
   status: Ref<TicketStatus | undefined>;
   ticketType: Ref<TicketType | undefined>;
+  deptId: Ref<number | undefined>;
 }
 
 function readString(value: unknown) {
@@ -37,6 +38,7 @@ export function useTicketFilterQuery(filters: TicketFilterRefs) {
   filters.page.value = readPositiveNumber(route.query.page) ?? 1;
   filters.pageSize.value = readPositiveNumber(route.query.pageSize) ?? 20;
   filters.assigneeId.value = readPositiveNumber(route.query.PICid);
+  filters.deptId.value = readPositiveNumber(route.query.deptId);
 
   filters.priority.value = readString(route.query.priority) as
     | TicketPriority
@@ -57,6 +59,7 @@ export function useTicketFilterQuery(filters: TicketFilterRefs) {
   function syncFilterQuery() {
     void router.replace({
       query: {
+        deptId: filters.deptId.value,
         PICid: filters.assigneeId.value,
         endTime: filters.createTimeRange.value?.[1],
         keyword: filters.keyword.value.trim() || undefined,

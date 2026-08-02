@@ -13,6 +13,8 @@ export default eventHandler((event) => {
   const users = MOCK_USERS.filter(
     (item) => item.tenantId === userinfo.tenantId,
   ).map((item) => ({
+    deptId: item.deptId,
+    deptName: item.deptName,
     id: item.id,
     realName: item.realName,
   }));

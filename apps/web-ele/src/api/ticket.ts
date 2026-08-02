@@ -89,6 +89,7 @@ export interface TicketListResult {
 }
 
 export function getTicketListApi(params: {
+  deptId?: number;
   endTime?: string;
   keyword?: string;
   page: number;
