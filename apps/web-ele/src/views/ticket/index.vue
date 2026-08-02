@@ -511,7 +511,11 @@ onMounted(() => {
             {{ getPICName(row.PICid) }}
           </template>
         </ElTableColumn>
-        <ElTableColumn label="更新时间" prop="updateTime" />
+        <ElTableColumn label="更新时间">
+          <template #default="{ row }">
+            {{ formatTime(row.updateTime) }}
+          </template>
+        </ElTableColumn>
       </ElTable>
 
       <ElPagination
