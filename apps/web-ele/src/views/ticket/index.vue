@@ -46,6 +46,7 @@ import { useTicketCreate } from './use-ticket-create';
 import { useTicketOperation } from './use-ticket-operation';
 import { useTicketTransfer } from './use-ticket-transfer';
 import { useTicketFilterQuery } from './use-ticket-filter-query';
+import { useTicketSla } from './use-ticket-sla';
 
 const loading = ref(false);
 const list = ref<TicketListItem[]>([]);
@@ -73,6 +74,14 @@ const ticketPriorityMap = {
   P1: 'danger',
   P2: 'warning',
   P3: 'success',
+} as const;
+
+const ticketSlaStatusMap = {
+  completed: { text: '已完成', type: 'success' },
+  normal: { text: '正常', type: 'success' },
+  overdue: { text: '已超时', type: 'danger' },
+  paused: { text: '已暂停', type: 'info' },
+  warning: { text: '即将超时', type: 'warning' },
 } as const;
 
 const userOptions = ref<UserOption[]>([]);
@@ -392,6 +401,8 @@ const { syncFilterQuery } = useTicketFilterQuery({
   ticketType,
 });
 
+const { formatSlaRemaining } = useTicketSla();
+
 onMounted(() => {
   loadData();
   loadUserOptions();
@@ -523,23 +534,17 @@ onMounted(() => {
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="SLA状态">
+        <ElTableColumn label="SLA 状态" min-width="130">
           <template #default="{ row }">
-            <ElTag v-if="row.slaStatus === 'normal'" type="success">
-              正常
-            </ElTag>
-            <ElTag v-else-if="row.slaStatus === 'warning'" type="warning">
-              即将超时
-            </ElTag>
-            <ElTag v-else-if="row.slaStatus === 'overdue'" type="danger">
-              已超时
-            </ElTag>
-            <ElTag v-else-if="row.slaStatus === 'paused'" type="info">
-              已暂停
-            </ElTag>
-            <ElTag v-else-if="row.slaStatus === 'completed'" type="success">
-              已完成
-            </ElTag>
+            <div class="flex flex-col items-start gap-1">
+              <ElTag :type="ticketSlaStatusMap[row.slaStatus].type">
+                {{ ticketSlaStatusMap[row.slaStatus].text }}
+              </ElTag>
+
+              <span class="text-xs text-gray-500">
+                {{ formatSlaRemaining(row.slaDeadline, row.slaStatus) }}
+              </span>
+            </div>
           </template>
         </ElTableColumn>
         <ElTableColumn label="负责人">
@@ -606,6 +611,15 @@ onMounted(() => {
 
             <ElDescriptionsItem label="SLA 截止时间">
               {{ formatTime(ticketDetail.slaDeadline) }}
+            </ElDescriptionsItem>
+
+            <ElDescriptionsItem label="SLA 剩余">
+              {{
+                formatSlaRemaining(
+                  ticketDetail.slaDeadline,
+                  ticketDetail.slaStatus,
+                )
+              }}
             </ElDescriptionsItem>
           </ElDescriptions>
 
