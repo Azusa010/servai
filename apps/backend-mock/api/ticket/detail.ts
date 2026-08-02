@@ -1,6 +1,6 @@
 import { eventHandler, getQuery, setResponseStatus } from 'h3';
-
 import { verifyAccessToken } from '~/utils/jwt-utils';
+import { getTicketSlaStatus } from '~/utils/ticket-utils';
 import { MOCK_TICKETS } from '~/utils/mock-data';
 import {
   unAuthorizedResponse,
@@ -32,5 +32,8 @@ export default eventHandler((event) => {
     return useResponseError('工单不存在');
   }
 
-  return useResponseSuccess(ticket);
+  return useResponseSuccess({
+    ...ticket,
+    slaStatus: getTicketSlaStatus(ticket),
+  });
 });

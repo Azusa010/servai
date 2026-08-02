@@ -2,7 +2,7 @@ import { eventHandler, getQuery } from 'h3';
 import { verifyAccessToken } from '~/utils/jwt-utils';
 import { MOCK_TICKETS, MOCK_USERS } from '~/utils/mock-data';
 import { unAuthorizedResponse, usePageResponseSuccess } from '~/utils/response';
-
+import { getTicketSlaStatus } from '~/utils/ticket-utils';
 export default eventHandler((event) => {
   const userinfo = verifyAccessToken(event);
 
@@ -95,5 +95,10 @@ export default eventHandler((event) => {
     );
   }
 
-  return usePageResponseSuccess(page as string, pageSize as string, listData);
+  const result = listData.map((item) => ({
+    ...item,
+    slaStatus: getTicketSlaStatus(item),
+  }));
+
+  return usePageResponseSuccess(page as string, pageSize as string, result);
 });

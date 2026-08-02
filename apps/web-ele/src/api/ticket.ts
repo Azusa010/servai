@@ -68,14 +68,20 @@ export interface TicketListItem {
   ticketNo: string;
   title: string;
   updateTime: string;
+  slaDeadline: string;
+  slaStatus: TicketSlaStatus;
 }
-
+export type TicketSlaStatus =
+  | 'completed'
+  | 'normal'
+  | 'overdue'
+  | 'paused'
+  | 'warning';
 export interface TicketDetail extends TicketListItem {
   attachments: TicketAttachment[];
   createTime: string;
   creatorId: null | number;
   description: string;
-  slaDeadline: string;
   source: TicketSource;
   sourceRef: null | string;
   tenantId: number;
@@ -133,4 +139,3 @@ export interface CreateTicketParams {
 export function createTicketApi(data: CreateTicketParams) {
   return requestClient.post<TicketDetail>('/ticket/create', data);
 }
-
