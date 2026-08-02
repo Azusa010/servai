@@ -31,6 +31,7 @@ import {
   publishKnowledgeDocumentApi,
   uploadKnowledgeBaseFileApi,
 } from '#/api';
+import type { DefaultRow } from 'element-plus/lib/components/table/src/table/defaults.js';
 
 const loading = ref(false);
 const list = ref<KnowledgeBase[]>([]);
@@ -176,6 +177,10 @@ async function handlePublishDocument(row: KnowledgeDocument) {
   ElMessage.success('发布成功');
 }
 
+function toggleStatus(row: DefaultRow) {
+  row.status = row.status === 'enabled' ? 'disabled' : 'enabled';
+}
+
 onBeforeUnmount(stopDocumentRefresh);
 onMounted(loadData);
 </script>
@@ -209,9 +214,9 @@ onMounted(loadData);
         <ElTable.TableColumn label="说明" prop="description" />
         <ElTable.TableColumn label="状态">
           <template #default="{ row }">
-            <ElTag :type="row.status === 'enabled' ? 'success' : 'info'">
+            <ElButton size="small" :type="row.status === 'enabled' ? 'success' : 'info'" @click="toggleStatus(row)">
               {{ row.status === 'enabled' ? '启用' : '停用' }}
-            </ElTag>
+            </ElButton>
           </template>
         </ElTable.TableColumn>
         <ElTable.TableColumn label="操作" width="100">
