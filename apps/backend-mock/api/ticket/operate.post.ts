@@ -86,14 +86,17 @@ export default eventHandler(async (event) => {
       .find((item) => item.action === 'suspend');
 
     if (suspendedTimeline) {
+      // 开始挂起时间
       const suspendedAt = new Date(suspendedTimeline.actionTime).getTime();
+      // 恢复时间
       const resumedAt = new Date(actionTime).getTime();
+      // SLA截至时间
       const deadline = new Date(ticket.slaDeadline).getTime();
 
       if (
         !Number.isNaN(suspendedAt) &&
         !Number.isNaN(deadline) &&
-        resumedAt > deadline
+        resumedAt > suspendedAt
       ) {
         const suspendedDuration = resumedAt - suspendedAt;
 
