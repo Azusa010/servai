@@ -133,3 +133,4 @@ export interface CreateTicketParams {
 export function createTicketApi(data: CreateTicketParams) {
   return requestClient.post<TicketDetail>('/ticket/create', data);
 }
+

@@ -19,8 +19,6 @@ export default eventHandler((event) => {
     priority,
     status,
     type,
-    startTime,
-    endTime,
   } = getQuery(event);
 
   let listData = MOCK_TICKETS.filter(
@@ -74,20 +72,6 @@ export default eventHandler((event) => {
         item.consumer.customerName,
         item.consumer.contactName,
       ].some((value) => value.toLowerCase().includes(normalizedKeyword)),
-    );
-  }
-
-  if (startTime) {
-    const startDate = new Date(String(startTime));
-    listData = listData.filter(
-      (item) => item.createTime >= startDate.toISOString(),
-    );
-  }
-
-  if (endTime) {
-    const endDate = new Date(String(endTime));
-    listData = listData.filter(
-      (item) => item.createTime <= endDate.toISOString(),
     );
   }
 

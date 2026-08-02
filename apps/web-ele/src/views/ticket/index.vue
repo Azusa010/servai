@@ -23,7 +23,7 @@ import {
   ElDescriptionsItem,
   ElDialog,
   ElDivider,
-  ElDrawer,
+  ElEmpty,
   ElForm,
   ElFormItem,
   ElInput,
@@ -55,8 +55,9 @@ const keyword = ref('');
 const priority = ref<TicketPriority>();
 const status = ref<TicketStatus>();
 const assigneeId = ref<number>();
+const ticketType = ref<TicketType>();
+const createTimeRange = ref<[string, string]>();
 const detailLoading = ref(false);
-const detailVisible = ref(false);
 const ticketDetail = ref<TicketDetail>();
 
 const ticketStatusMap = {
@@ -133,13 +134,23 @@ async function loadData() {
       pageSize: pageSize.value,
       PICid: assigneeId.value,
       priority: priority.value,
-      startTime: createTimeRange.value?.[0],
       status: status.value,
       type: ticketType.value,
     });
 
     list.value = result.items;
     total.value = result.total;
+
+    const firstTicket = result.items[0];
+    const selectedTicketExists = list.value.some(
+      (item) => item.id === ticketDetail.value?.id,
+    );
+
+    if (!firstTicket) {
+      ticketDetail.value = undefined;
+    } else if (!selectedTicketExists) {
+      await handleRowClick(firstTicket);
+    }
   } catch {
     list.value = [];
     total.value = 0;
@@ -159,6 +170,8 @@ function handleReset() {
   keyword.value = '';
   priority.value = undefined;
   status.value = undefined;
+  ticketType.value = undefined;
+  createTimeRange.value = undefined;
   assigneeId.value = undefined;
   page.value = 1;
   ticketType.value = undefined;
@@ -168,14 +181,12 @@ function handleReset() {
 }
 
 async function handleRowClick(row: TicketListItem) {
-  detailVisible.value = true;
   detailLoading.value = true;
-  ticketDetail.value = undefined;
 
   try {
     ticketDetail.value = await getTicketDetailApi(row.id);
   } catch {
-    detailVisible.value = false;
+    ticketDetail.value = undefined;
     ElMessage.error('工单详情加载失败');
   } finally {
     detailLoading.value = false;
@@ -280,7 +291,6 @@ const { createForm, createVisible, creating, openCreate, submitCreate } =
     await loadData();
 
     ticketDetail.value = ticket;
-    detailVisible.value = true;
   });
 
 const inputSearch = useDebounceFn(() => {
@@ -393,30 +403,40 @@ onMounted(() => {
 </script>
 
 <template>
-  <Page description="统一管理客户工单" title="工单中心">
-    <ElCard shadow="never">
-      <div class="mb-4 flex gap-3">
-        <ElInput
-          v-model="keyword"
-          clearable
-          placeholder="搜索工单编号、标题或客户"
-          @keyup.enter="handleSearch"
-          @input="inputSearch"
-        />
+  <Page content-class="min-h-0 overflow-auto xl:overflow-hidden">
+    <div
+      class="grid grid-cols-1 gap-4 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_420px]"
+    >
+      <div class="xl:flex xl:min-h-0 xl:flex-col">
+        <div class="mb-4 shrink-0 px-1">
+          <h1 class="text-2xl font-semibold">工单中心</h1>
+          <p class="mt-1 text-sm text-muted-foreground">统一管理客户工单</p>
+        </div>
 
-        <ElSelect
-          v-model="status"
-          clearable
-          placeholder="全部状态"
-          @change="handleSearch"
-        >
-          <ElOption label="待分配" value="Unassigned" />
-          <ElOption label="处理中" value="Processing" />
-          <ElOption label="待确认" value="Pending_Confirmation" />
-          <ElOption label="已挂起" value="Suspended" />
-          <ElOption label="已关闭" value="Closed" />
-          <ElOption label="已取消" value="Canceled" />
-        </ElSelect>
+        <div class="xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1">
+          <ElCard shadow="never">
+            <div class="mb-4 flex gap-3">
+              <ElInput
+                v-model="keyword"
+                clearable
+                placeholder="搜索工单编号、标题或客户"
+                @keyup.enter="handleSearch"
+                @input="inputSearch"
+              />
+
+              <ElSelect
+                v-model="status"
+                clearable
+                placeholder="全部状态"
+                @change="handleSearch"
+              >
+                <ElOption label="待分配" value="Unassigned" />
+                <ElOption label="处理中" value="Processing" />
+                <ElOption label="待确认" value="Pending_Confirmation" />
+                <ElOption label="已挂起" value="Suspended" />
+                <ElOption label="已关闭" value="Closed" />
+                <ElOption label="已取消" value="Canceled" />
+              </ElSelect>
 
         <ElSelect
           v-model="priority"
@@ -427,20 +447,6 @@ onMounted(() => {
           <ElOption label="P1" value="P1" />
           <ElOption label="P2" value="P2" />
           <ElOption label="P3" value="P3" />
-        </ElSelect>
-
-        <ElSelect
-          v-model="ticketType"
-          clearable
-          placeholder="全部类型"
-          @change="handleSearch"
-        >
-          <ElOption label="投诉" value="complain" />
-          <ElOption label="咨询" value="consult" />
-          <ElOption label="需求" value="demand" />
-          <ElOption label="故障" value="fault" />
-          <ElOption label="运营" value="operation" />
-          <ElOption label="预警" value="warning" />
         </ElSelect>
 
         <ElSelect
@@ -456,33 +462,10 @@ onMounted(() => {
             :value="user.id"
           />
         </ElSelect>
-        <ElSelect
-          v-model="deptId"
-          clearable
-          placeholder="全部部门"
-          @change="handleSearch"
-        >
-          <ElOption
-            v-for="department in departmentOptions"
-            :key="department.id"
-            :label="department.name"
-            :value="department.id"
-          />
-        </ElSelect>
+
         <ElButton @click="handleReset">重置</ElButton>
         <ElButton type="primary" @click="handleOpenCreate"> 新建工单 </ElButton>
       </div>
-
-      <ElDatePicker
-        v-model="createTimeRange"
-        clearable
-        end-placeholder="结束时间"
-        range-separator="至"
-        start-placeholder="开始时间"
-        type="datetimerange"
-        value-format="YYYY-MM-DDTHH:mm:ss.SSSZ"
-        @change="handleSearch"
-      />
       <ElTable
         v-loading="loading"
         :data="list"
@@ -514,175 +497,186 @@ onMounted(() => {
         <ElTableColumn label="更新时间" prop="updateTime" />
       </ElTable>
 
-      <ElPagination
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        class="mt-4 justify-end"
-        layout="total, sizes, prev, pager, next"
-        :total="total"
-        @current-change="handlePageChange"
-        @size-change="handlePageSizeChange"
-      />
-    </ElCard>
-    <ElDrawer
-      v-model="detailVisible"
-      :title="ticketDetail?.ticketNo ?? '工单详情'"
-      size="420px"
-    >
-      <div v-loading="detailLoading">
-        <template v-if="ticketDetail">
-          <ElDescriptions :column="1" border title="工单信息">
-            <ElDescriptionsItem label="标题">
-              {{ ticketDetail.title }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="描述">
-              {{ ticketDetail.description }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="优先级">
-              <ElTag :type="ticketPriorityMap[ticketDetail.priority]">
-                {{ ticketDetail.priority }}
-              </ElTag>
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="状态">
-              <ElTag :type="ticketStatusMap[ticketDetail.status].type">
-                {{ ticketStatusMap[ticketDetail.status].text }}
-              </ElTag>
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="负责人">
-              {{ getPICName(ticketDetail.PICid) }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="创建时间">
-              {{ formatTime(ticketDetail.createTime) }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="更新时间">
-              {{ formatTime(ticketDetail.updateTime) }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="SLA 截止时间">
-              {{ formatTime(ticketDetail.slaDeadline) }}
-            </ElDescriptionsItem>
-          </ElDescriptions>
-
-          <ElDivider />
-
-          <ElDescriptions :column="1" border title="客户信息">
-            <ElDescriptionsItem label="客户名称">
-              {{ ticketDetail.consumer.customerName }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="联系人">
-              {{ ticketDetail.consumer.contactName }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="电话">
-              {{ ticketDetail.consumer.phone }}
-            </ElDescriptionsItem>
-
-            <ElDescriptionsItem label="邮箱">
-              {{ ticketDetail.consumer.email }}
-            </ElDescriptionsItem>
-          </ElDescriptions>
-          <ElDivider />
-
-          <h3 class="mb-4">处理进度</h3>
-
-          <ElTimeline>
-            <ElTimelineItem
-              v-for="timeline in ticketDetail.timelines"
-              :key="timeline.id"
-              :timestamp="formatTime(timeline.actionTime)"
-              placement="top"
-              type="primary"
-            >
-              <div class="flex items-center gap-2">
-                <strong>{{ ticketActionMap[timeline.action] }}</strong>
-
-                <ElTag
-                  size="small"
-                  :type="ticketStatusMap[timeline.afterStatus].type"
-                >
-                  {{ ticketStatusMap[timeline.afterStatus].text }}
-                </ElTag>
-              </div>
-
-              <div class="mt-2 text-sm">
-                操作人：{{ getOperatorName(timeline.actorId) }}
-              </div>
-
-              <div v-if="timeline.comment" class="mt-1 text-sm">
-                备注：{{ timeline.comment }}
-              </div>
-            </ElTimelineItem>
-          </ElTimeline>
-        </template>
+            <ElPagination
+              v-model:current-page="page"
+              v-model:page-size="pageSize"
+              class="mt-4 justify-end"
+              layout="total, sizes, prev, pager, next"
+              :total="total"
+              @current-change="handlePageChange"
+              @size-change="handlePageSizeChange"
+            />
+          </ElCard>
+        </div>
       </div>
-      <template #footer>
-        <ElButton
-          v-if="
-            ticketDetail && transferableStatuses.includes(ticketDetail.status)
-          "
-          :loading="operating"
-          @click="handleOpenTransfer"
-        >
-          转交负责人
-        </ElButton>
-        <ElButton
-          v-if="ticketDetail?.status === 'Unassigned'"
-          :loading="operating"
-          type="primary"
-          @click="handleClaim"
-        >
-          领取工单
-        </ElButton>
-        <ElButton
-          v-if="ticketDetail?.status === 'Unassigned'"
-          :loading="operating"
-          type="danger"
-          @click="handleTerminalOperation('cancel')"
-        >
-          取消工单
-        </ElButton>
-        <template v-if="ticketDetail?.status === 'Processing'">
-          <ElButton
-            :loading="operating"
-            type="warning"
-            @click="handleStatusOperation('suspend')"
-          >
-            挂起工单
-          </ElButton>
+      <div class="xl:h-full xl:min-h-0 xl:overflow-y-auto xl:pl-1">
+        <ElCard class="min-h-full" shadow="never">
+          <template #header>
+            <strong>
+              {{ ticketDetail?.ticketNo ?? '工单详情' }}
+            </strong>
+          </template>
+          <div v-loading="detailLoading">
+            <template v-if="ticketDetail">
+              <ElDescriptions :column="1" border title="工单信息">
+                <ElDescriptionsItem label="标题">
+                  {{ ticketDetail.title }}
+                </ElDescriptionsItem>
 
-          <ElButton
-            :loading="operating"
-            type="success"
-            @click="handleStatusOperation('resolve')"
+                <ElDescriptionsItem label="描述">
+                  {{ ticketDetail.description }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="优先级">
+                  <ElTag :type="ticketPriorityMap[ticketDetail.priority]">
+                    {{ ticketDetail.priority }}
+                  </ElTag>
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="状态">
+                  <ElTag :type="ticketStatusMap[ticketDetail.status].type">
+                    {{ ticketStatusMap[ticketDetail.status].text }}
+                  </ElTag>
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="负责人">
+                  {{ getPICName(ticketDetail.PICid) }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="创建时间">
+                  {{ formatTime(ticketDetail.createTime) }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="更新时间">
+                  {{ formatTime(ticketDetail.updateTime) }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="SLA 截止时间">
+                  {{ formatTime(ticketDetail.slaDeadline) }}
+                </ElDescriptionsItem>
+              </ElDescriptions>
+
+              <ElDivider />
+
+              <ElDescriptions :column="1" border title="客户信息">
+                <ElDescriptionsItem label="客户名称">
+                  {{ ticketDetail.consumer.customerName }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="联系人">
+                  {{ ticketDetail.consumer.contactName }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="电话">
+                  {{ ticketDetail.consumer.phone }}
+                </ElDescriptionsItem>
+
+                <ElDescriptionsItem label="邮箱">
+                  {{ ticketDetail.consumer.email }}
+                </ElDescriptionsItem>
+              </ElDescriptions>
+              <ElDivider />
+
+              <h3 class="mb-4">处理进度</h3>
+
+              <ElTimeline>
+                <ElTimelineItem
+                  v-for="timeline in ticketDetail.timelines"
+                  :key="timeline.id"
+                  :timestamp="formatTime(timeline.actionTime)"
+                  placement="top"
+                  type="primary"
+                >
+                  <div class="flex items-center gap-2">
+                    <strong>{{ ticketActionMap[timeline.action] }}</strong>
+
+                    <ElTag
+                      size="small"
+                      :type="ticketStatusMap[timeline.afterStatus].type"
+                    >
+                      {{ ticketStatusMap[timeline.afterStatus].text }}
+                    </ElTag>
+                  </div>
+
+                  <div class="mt-2 text-sm">
+                    操作人：{{ getOperatorName(timeline.actorId) }}
+                  </div>
+
+                  <div v-if="timeline.comment" class="mt-1 text-sm">
+                    备注：{{ timeline.comment }}
+                  </div>
+                </ElTimelineItem>
+              </ElTimeline>
+            </template>
+            <ElEmpty v-else description="暂无工单详情" />
+          </div>
+          <div
+            v-if="ticketDetail"
+            class="mt-4 flex flex-wrap justify-end gap-2 border-t pt-4"
           >
-            标记解决
-          </ElButton>
-        </template>
-        <ElButton
-          v-if="ticketDetail?.status === 'Suspended'"
-          :loading="operating"
-          type="primary"
-          @click="handleStatusOperation('resume')"
-        >
-          恢复处理
-        </ElButton>
-        <ElButton
-          v-if="ticketDetail?.status === 'Pending_Confirmation'"
-          :loading="operating"
-          type="danger"
-          @click="handleTerminalOperation('close')"
-        >
-          关闭工单
-        </ElButton>
-      </template>
-    </ElDrawer>
+            <ElButton
+              v-if="
+                ticketDetail &&
+                transferableStatuses.includes(ticketDetail.status)
+              "
+              :loading="operating"
+              @click="handleOpenTransfer"
+            >
+              转交负责人
+            </ElButton>
+            <ElButton
+              v-if="ticketDetail?.status === 'Unassigned'"
+              :loading="operating"
+              type="primary"
+              @click="handleClaim"
+            >
+              领取工单
+            </ElButton>
+            <ElButton
+              v-if="ticketDetail?.status === 'Unassigned'"
+              :loading="operating"
+              type="danger"
+              @click="handleTerminalOperation('cancel')"
+            >
+              取消工单
+            </ElButton>
+            <template v-if="ticketDetail?.status === 'Processing'">
+              <ElButton
+                :loading="operating"
+                type="warning"
+                @click="handleStatusOperation('suspend')"
+              >
+                挂起工单
+              </ElButton>
+
+              <ElButton
+                :loading="operating"
+                type="success"
+                @click="handleStatusOperation('resolve')"
+              >
+                标记解决
+              </ElButton>
+            </template>
+            <ElButton
+              v-if="ticketDetail?.status === 'Suspended'"
+              :loading="operating"
+              type="primary"
+              @click="handleStatusOperation('resume')"
+            >
+              恢复处理
+            </ElButton>
+            <ElButton
+              v-if="ticketDetail?.status === 'Pending_Confirmation'"
+              :loading="operating"
+              type="danger"
+              @click="handleTerminalOperation('close')"
+            >
+              关闭工单
+            </ElButton>
+          </div>
+        </ElCard>
+      </div>
+    </div>
     <ElDialog
       v-model="transferVisible"
       append-to-body
